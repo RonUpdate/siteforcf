@@ -5,34 +5,46 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Loader2, Upload, X, ImageIcon, AlertCircle } from "lucide-react"
-import { v4 as uuidv4 } from "uuid"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Loader2, Upload, X, ImageIcon, AlertCircle, CheckCircle } from "lucide-react"
+import { checkBucketExists } from "@/utils/storage-utils"
+import { v4 as uuidv4 } from "uuid"
 
-interface ImageUploaderProps {
+interface EnhancedImageUploaderProps {
   bucketName: string
   onImageUploaded: (url: string) => void
   existingImageUrl?: string
   folder?: string
   maxSizeMB?: number
   allowedTypes?: string[]
+  showBucketStatus?: boolean
 }
 
-export default function ImageUploader({
+export default function EnhancedImageUploader({
   bucketName,
   onImageUploaded,
   existingImageUrl = "",
   folder = "",
   maxSizeMB = 5,
   allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"],
-}: ImageUploaderProps) {
+  showBucketStatus = false,
+}: EnhancedImageUploaderProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<string>(existingImageUrl)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [bucketExists, setBucketExists] = useState<boolean | null>(null)
+  const [bucketChecking, setBucketChecking] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+
+  // Проверяем существование бакета при монтировании компонента
+  useEffect(() => {
+    if (showBucketStatus) {
+      checkBucket()
+    }
+  }, [bucketName, showBucketStatus])
 
   // Обновляем превью, если изменился existingImageUrl
   useEffect(() => {
@@ -43,10 +55,23 @@ export default function ImageUploader({
     }
   }, [existingImageUrl])
 
+  const checkBucket = async () => {
+    setBucketChecking(true)
+    try {
+      const exists = await checkBucketExists(bucketName)
+      setBucketExists(exists)
+    } catch (error) {
+      console.error("Ошибка при проверке бакета:", error)
+      setBucketExists(false)
+    } finally {
+      setBucketChecking(false)
+    }
+  }
+
   const validateFile = (file: File): string | null => {
     // Проверка типа файла
     if (!allowedTypes.includes(file.type)) {
-      return `Недопустимый тип файла. Разрешены только: ${allowedTypes.join(", ")}`
+      return `Недопустимый тип файла. Разрешены только: ${allowedTypes.map((type) => type.replace("image/", "").toUpperCase()).join(", ")}`
     }
 
     // Проверка размера файла
@@ -76,12 +101,20 @@ export default function ImageUploader({
     setImageError(false)
 
     try {
+      // Если бакет не существует, выдаем ошибку
+      if (showBucketStatus && bucketExists === false) {
+        throw new Error(`Бакет ${bucketName} не существует. Создайте его в панели управления Supabase.`)
+      }
+
       // Создаем уникальное имя файла
       const fileExt = file.name.split(".").pop()
       const filePath = folder ? `${folder}/${uuidv4()}.${fileExt}` : `${uuidv4()}.${fileExt}`
 
       // Загружаем файл в Supabase Storage
-      const { error: uploadError, data } = await supabase.storage.from(bucketName).upload(filePath, file)
+      const { error: uploadError, data } = await supabase.storage.from(bucketName).upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      })
 
       if (uploadError) throw uploadError
 
@@ -95,9 +128,29 @@ export default function ImageUploader({
       onImageUploaded(publicUrl)
     } catch (error: any) {
       console.error("Ошибка загрузки изображения:", error)
-      setError(error.message || "Ошибка загрузки изображения")
+
+      // Форматируем сообщение об ошибке
+      let errorMessage = error.message || "Ошибка загрузки изображения"
+
+      // Проверяем специфические ошибки Supabase
+      if (error.statusCode === 400) {
+        errorMessage = "Неверный запрос. Проверьте формат файла."
+      } else if (error.statusCode === 403) {
+        errorMessage = "Доступ запрещен. Проверьте политики доступа к хранилищу."
+      } else if (error.statusCode === 404) {
+        errorMessage = `Бакет ${bucketName} не найден. Создайте его в панели управления Supabase.`
+      } else if (error.statusCode === 413) {
+        errorMessage = `Файл слишком большой. Максимальный размер: ${maxSizeMB}MB`
+      }
+
+      setError(errorMessage)
     } finally {
       setUploading(false)
+
+      // Сбрасываем значение input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -143,6 +196,29 @@ export default function ImageUploader({
 
   return (
     <div className="space-y-4">
+      {showBucketStatus && (
+        <div className="mb-2">
+          {bucketChecking ? (
+            <div className="flex items-center text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Проверка бакета {bucketName}...
+            </div>
+          ) : bucketExists === true ? (
+            <div className="flex items-center text-sm text-green-600">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Бакет {bucketName} существует и доступен
+            </div>
+          ) : bucketExists === false ? (
+            <Alert variant="destructive" className="py-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Бакет {bucketName} не существует или недоступен. Создайте его в панели управления Supabase.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </div>
+      )}
+
       {preview ? (
         <div className="relative">
           {!imageLoaded && !imageError && (
@@ -182,7 +258,12 @@ export default function ImageUploader({
         <div className="border border-dashed border-gray-300 rounded-md p-8 text-center">
           <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-2" />
           <p className="text-sm text-gray-500 mb-4">Перетащите изображение сюда или нажмите для выбора</p>
-          <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || (showBucketStatus && bucketExists === false)}
+          >
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

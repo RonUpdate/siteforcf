@@ -6,7 +6,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Plus, Edit, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { AdminNotifications } from "@/components/notifications"
 
 interface Category {
   id: string
@@ -22,6 +23,7 @@ export default function CategoriesPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   // Загружаем категории при монтировании компонента
@@ -49,7 +51,7 @@ export default function CategoriesPage() {
   }
 
   // Функция для удаления категории
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
     if (!confirm("Вы уверены, что хотите удалить эту категорию? Это также удалит все связанные продукты.")) return
 
     setDeleting(id)
@@ -60,6 +62,10 @@ export default function CategoriesPage() {
 
       // Обновляем список категорий после удаления
       setCategories((prevCategories) => prevCategories.filter((category) => category.id !== id))
+
+      // Добавляем параметры для уведомления об успешном удалении
+      router.push(`/admin/categories?success=true&action=delete&type=category&title=${encodeURIComponent(title)}`)
+      router.refresh()
     } catch (error: any) {
       console.error("Error deleting category:", error)
       alert("Ошибка при удалении категории. Возможно, с ней связаны продукты.")
@@ -78,6 +84,9 @@ export default function CategoriesPage() {
 
   return (
     <div>
+      {/* Добавляем компонент уведомлений */}
+      <AdminNotifications />
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Управление категориями</h1>
         <Link href="/admin/categories/new">
@@ -145,7 +154,7 @@ export default function CategoriesPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete(category.id)}
+                          onClick={() => handleDelete(category.id, category.title)}
                           disabled={deleting === category.id}
                         >
                           {deleting === category.id ? (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Plus, Edit, Trash2, ExternalLink } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { AdminNotifications } from "@/components/notifications"
 
 interface Product {
   id: string
@@ -80,6 +81,10 @@ export default function ProductsPage() {
 
       // Обновляем список продуктов после удаления
       setProducts((prevProducts) => prevProducts.filter((product) => product.id !== id))
+
+      // Показываем уведомление об успешном удалении
+      router.push("/admin/products?success=true&action=delete&type=product")
+      router.refresh()
     } catch (error: any) {
       console.error("Error deleting product:", error)
       alert("Ошибка при удалении продукта")
@@ -98,9 +103,12 @@ export default function ProductsPage() {
 
   return (
     <div>
+      {/* Компонент для отображения уведомлений */}
+      <AdminNotifications />
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Управление продуктами</h1>
-        <Link href="/admin/products/new">
+        <Link href="/admin/products/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             Добавить продукт
@@ -114,7 +122,7 @@ export default function ProductsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center p-6">
             <p className="text-gray-500 mb-4">Продукты не найдены</p>
-            <Link href="/admin/products/new">
+            <Link href="/admin/products/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Добавить первый продукт
@@ -184,7 +192,7 @@ export default function ProductsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/admin/products/${product.id}`}>
+                        <Link href={`/admin/products/edit/${product.id}`}>
                           <Button variant="outline" size="sm">
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Редактировать</span>

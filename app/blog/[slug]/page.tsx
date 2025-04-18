@@ -1,51 +1,54 @@
-import { createClient } from "@/utils/supabase/server"
+import { getBlogPostBySlug } from "@/utils/db-utils"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import MarkdownRenderer from "@/components/markdown-renderer"
+import { formatDate } from "@/utils/date-utils"
 
-export default async function BlogPostPage({
-  params,
-}: {
-  params: { slug: string }
-}) {
-  const supabase = createClient()
+interface BlogPostPageProps {
+  params: {
+    slug: string
+  }
+}
 
-  // Получаем блог-пост по slug
-  const { data: post, error } = await supabase
-    .from("blog_posts")
-    .select("id, title, content, created_at, image_url")
-    .eq("slug", params.slug)
-    .single()
+export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const post = await getBlogPostBySlug(params.slug)
 
-  if (error || !post) {
+  if (!post) {
     notFound()
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link href="/blog">
-        <Button variant="ghost" className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <Link href="/blog" className="inline-block mb-6">
+        <Button variant="outline" size="sm">
+          <ArrowLeft className="h-4 w-4 mr-2" />
           Назад к блогу
         </Button>
       </Link>
 
       <article>
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-          <p className="text-gray-500">{new Date(post.created_at).toLocaleDateString()}</p>
-        </header>
+        <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
+        <div className="text-gray-500 mb-6">{formatDate(post.created_at)}</div>
 
         {post.image_url && (
-          <div className="mb-8 rounded-lg overflow-hidden">
-            <img src={post.image_url || "/placeholder.svg"} alt={post.title} className="w-full h-auto" />
+          <div className="mb-6">
+            <img
+              src={post.image_url || "/placeholder.svg"}
+              alt={post.title}
+              className="w-full rounded-lg object-cover"
+              style={{ maxHeight: "500px" }}
+              onError={(e) => {
+                e.currentTarget.src = "/diverse-blog-community.png"
+              }}
+            />
           </div>
         )}
 
-        <div className="prose prose-lg max-w-none">
-          <MarkdownRenderer content={post.content} />
+        <div className="prose max-w-none">
+          {post.content.split("\n").map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
         </div>
       </article>
     </div>

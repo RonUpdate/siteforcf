@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
 interface Category {
@@ -11,19 +10,13 @@ interface Category {
 
 interface CategoryFilterProps {
   categories: Category[]
-  activeCategory?: string
+  activeCategory?: string | null
+  onCategoryChange: (slug: string | null) => void
 }
 
-export default function CategoryFilter({ categories, activeCategory }: CategoryFilterProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-
+export default function CategoryFilter({ categories, activeCategory, onCategoryChange }: CategoryFilterProps) {
   const handleCategoryClick = (slug: string | null) => {
-    if (slug) {
-      router.push(`${pathname}?category=${slug}`)
-    } else {
-      router.push(pathname)
-    }
+    onCategoryChange(slug)
   }
 
   return (

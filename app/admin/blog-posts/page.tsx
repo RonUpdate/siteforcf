@@ -6,7 +6,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Plus, Edit, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { AdminNotifications } from "@/components/notifications"
 
 interface BlogPost {
   id: string
@@ -24,6 +25,7 @@ export default function BlogPostsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   // Загружаем блог-посты при монтировании компонента
@@ -51,7 +53,7 @@ export default function BlogPostsPage() {
   }
 
   // Функция для удаления блог-поста
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, title: string) => {
     if (!confirm("Вы уверены, что хотите удалить этот блог-пост?")) return
 
     setDeleting(id)
@@ -62,6 +64,9 @@ export default function BlogPostsPage() {
 
       // Обновляем список блог-постов после удаления
       setBlogPosts((prevBlogPosts) => prevBlogPosts.filter((post) => post.id !== id))
+
+      // Добавляем параметры для уведомления об успешном удалении
+      router.push(`/admin/blog-posts?success=true&action=delete&type=blog&title=${encodeURIComponent(title)}`)
     } catch (error: any) {
       console.error("Error deleting blog post:", error)
       alert("Ошибка при удалении блог-поста")
@@ -80,6 +85,8 @@ export default function BlogPostsPage() {
 
   return (
     <div>
+      <AdminNotifications />
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Управление блог-постами</h1>
         <Link href="/admin/blog-posts/new">
@@ -163,7 +170,7 @@ export default function BlogPostsPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete(post.id)}
+                          onClick={() => handleDelete(post.id, post.title)}
                           disabled={deleting === post.id}
                         >
                           {deleting === post.id ? (

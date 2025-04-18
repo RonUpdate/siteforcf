@@ -1,15 +1,33 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, FileText, User } from "lucide-react"
 
-export default async function Header() {
+export default function Header() {
+  const [session, setSession] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  // Проверяем, авторизован ли пользователь
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  useEffect(() => {
+    async function getSession() {
+      const { data } = await supabase.auth.getSession()
+      setSession(data.session)
+      setLoading(false)
+    }
+
+    getSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   return (
     <header className="border-b">
@@ -46,7 +64,7 @@ export default async function Header() {
               </Button>
             </Link>
 
-            {session ? (
+            {!loading && session ? (
               <Link href="/admin">
                 <Button>
                   <User className="h-5 w-5 mr-2" />

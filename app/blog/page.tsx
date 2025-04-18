@@ -1,15 +1,45 @@
-import Link from "next/link"
-import { createClient } from "@/utils/supabase/server"
-import { Card, CardContent } from "@/components/ui/card"
+"use client"
 
-export default async function BlogPage() {
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { createClient } from "@/utils/supabase/client"
+import { Card, CardContent } from "@/components/ui/card"
+import { Loader2 } from "lucide-react"
+
+export default function BlogPage() {
+  const [blogPosts, setBlogPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
   const supabase = createClient()
 
-  // Получаем все блог-посты
-  const { data: blogPosts } = await supabase
-    .from("blog_posts")
-    .select("id, title, slug, content, created_at, image_url")
-    .order("created_at", { ascending: false })
+  useEffect(() => {
+    async function fetchBlogPosts() {
+      setLoading(true)
+      try {
+        // Получаем все блог-посты
+        const { data } = await supabase
+          .from("blog_posts")
+          .select("id, title, slug, content, created_at, image_url")
+          .order("created_at", { ascending: false })
+
+        setBlogPosts(data || [])
+      } catch (error) {
+        console.error("Error fetching blog posts:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBlogPosts()
+  }, [supabase])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Package, FileText, Tag, Loader2 } from "lucide-react"
+import { Package, FileText, Tag, Loader2, ImageIcon, HardDrive } from "lucide-react"
 
 export default function AdminPage() {
   const [counts, setCounts] = useState({
@@ -115,6 +115,44 @@ export default function AdminPage() {
             </div>
             <Link href="/admin/blog-posts">
               <Button className="w-full">Управление статьями</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <ImageIcon className="h-5 w-5 mr-2" />
+              Тестирование изображений
+            </CardTitle>
+            <CardDescription>Проверка загрузки и отображения изображений</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              Используйте эту страницу для проверки корректности работы с изображениями в административной панели.
+            </p>
+            <Link href="/admin/image-test">
+              <Button variant="outline">Тестировать изображения</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <HardDrive className="h-5 w-5 mr-2" />
+              Тестирование хранилища
+            </CardTitle>
+            <CardDescription>Проверка политик доступа к хранилищу</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              Используйте эту страницу для проверки политик доступа к хранилищу и тестирования загрузки файлов.
+            </p>
+            <Link href="/admin/storage-test">
+              <Button variant="outline">Тестировать хранилище</Button>
             </Link>
           </CardContent>
         </Card>

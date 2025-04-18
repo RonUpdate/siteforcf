@@ -1,60 +1,94 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { createClient } from "@/utils/supabase/server"
+import { createClient } from "@/utils/supabase/client"
 import ProductCard from "@/components/product-card"
 import CategoryFilter from "@/components/category-filter"
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: { category?: string }
-}) {
+export default function HomePage() {
+  const [products, setProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [blogPosts, setBlogPosts] = useState<any[]>([])
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
   const supabase = createClient()
 
-  // Получаем категории для фильтра
-  const { data: categories } = await supabase.from("categories").select("id, title, slug").order("title")
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      try {
+        // Получаем категории для фильтра
+        const { data: categoriesData } = await supabase.from("categories").select("id, title, slug").order("title")
+        setCategories(categoriesData || [])
 
-  // Формируем запрос для продуктов с фильтрацией по категории
-  let productsQuery = supabase
-    .from("products")
-    .select(`
-      id, 
-      title, 
-      description, 
-      image_url, 
-      external_url,
-      categories (
-        id, 
-        title,
-        slug
-      )
-    `)
-    .order("created_at", { ascending: false })
-    .limit(6)
+        // Формируем запрос для продуктов с фильтрацией по категории
+        let productsQuery = supabase
+          .from("products")
+          .select(`
+            id, 
+            title, 
+            description, 
+            image_url, 
+            external_url,
+            categories (
+              id, 
+              title,
+              slug
+            )
+          `)
+          .order("created_at", { ascending: false })
+          .limit(6)
 
-  // Применяем фильтр по категории, если он указан
-  if (searchParams.category) {
-    const { data: categoryData } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("slug", searchParams.category)
-      .single()
+        // Применяем фильтр по категории, если он указан
+        if (activeCategory) {
+          const { data: categoryData } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("slug", activeCategory)
+            .single()
 
-    if (categoryData) {
-      productsQuery = productsQuery.eq("category_id", categoryData.id)
+          if (categoryData) {
+            productsQuery = productsQuery.eq("category_id", categoryData.id)
+          }
+        }
+
+        // Выполняем запрос
+        const { data: productsData } = await productsQuery
+        setProducts(productsData || [])
+
+        // Получаем последние блог-посты
+        const { data: blogPostsData } = await supabase
+          .from("blog_posts")
+          .select("id, title, slug, created_at, image_url")
+          .order("created_at", { ascending: false })
+          .limit(3)
+
+        setBlogPosts(blogPostsData || [])
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    fetchData()
+  }, [supabase, activeCategory])
+
+  const handleCategoryChange = (slug: string | null) => {
+    setActiveCategory(slug)
   }
 
-  // Выполняем запрос
-  const { data: products } = await productsQuery
-
-  // Получаем последние блог-посты
-  const { data: blogPosts } = await supabase
-    .from("blog_posts")
-    .select("id, title, slug, created_at, image_url")
-    .order("created_at", { ascending: false })
-    .limit(3)
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -96,7 +130,11 @@ export default async function HomePage({
         {/* Фильтр по категориям */}
         {categories && (
           <div className="mb-8">
-            <CategoryFilter categories={categories} activeCategory={searchParams.category} />
+            <CategoryFilter
+              categories={categories}
+              activeCategory={activeCategory}
+              onCategoryChange={handleCategoryChange}
+            />
           </div>
         )}
 
