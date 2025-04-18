@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -31,13 +31,8 @@ export default function ProductsPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Загружаем продукты при монтировании компонента
-  useEffect(() => {
-    fetchProducts()
-  }, [])
-
-  // Функция для загрузки продуктов
-  const fetchProducts = async () => {
+  // Используем useCallback для fetchProducts, чтобы избежать повторного создания функции
+  const fetchProducts = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -67,7 +62,12 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  // Загружаем продукты при монтировании компонента
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   // Функция для удаления продукта
   const handleDelete = async (id: string) => {
@@ -84,7 +84,6 @@ export default function ProductsPage() {
 
       // Показываем уведомление об успешном удалении
       router.push("/admin/products?success=true&action=delete&type=product")
-      router.refresh()
     } catch (error: any) {
       console.error("Error deleting product:", error)
       alert("Ошибка при удалении продукта")

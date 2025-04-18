@@ -1,15 +1,24 @@
 "use client"
 
-import { useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useRef } from "react"
+import { useSearchParams, usePathname, useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 
 export function AdminNotifications() {
   const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const router = useRouter()
   const { toast } = useToast()
+  const processedParams = useRef(false)
 
   useEffect(() => {
+    // Предотвращаем повторную обработку тех же параметров
+    const paramsKey = Array.from(searchParams.entries()).toString()
+
+    // Если параметры уже были обработаны, пропускаем
+    if (processedParams.current) return
+
     // Проверяем параметры URL для отображения уведомлений
     const success = searchParams.get("success")
     const action = searchParams.get("action")
@@ -44,6 +53,16 @@ export function AdminNotifications() {
           variant: "default",
           duration: 5000,
         })
+
+        // Отмечаем, что параметры обработаны
+        processedParams.current = true
+
+        // Очищаем URL от параметров уведомлений после их обработки
+        // Используем setTimeout, чтобы избежать проблем с обновлением во время рендеринга
+        setTimeout(() => {
+          const newUrl = pathname
+          router.replace(newUrl, { scroll: false })
+        }, 100)
       }
     }
 
@@ -56,8 +75,17 @@ export function AdminNotifications() {
         duration: 7000,
         action: <ToastAction altText="Попробовать снова">Попробовать снова</ToastAction>,
       })
+
+      // Отмечаем, что параметры обработаны
+      processedParams.current = true
+
+      // Очищаем URL от параметров уведомлений после их обработки
+      setTimeout(() => {
+        const newUrl = pathname
+        router.replace(newUrl, { scroll: false })
+      }, 100)
     }
-  }, [searchParams, toast])
+  }, [searchParams, toast, pathname, router])
 
   return null
 }
