@@ -1,5 +1,3 @@
-import { createClient } from "@/utils/supabase/server"
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import SecurityDashboard from "@/components/admin/security-dashboard"
 
@@ -9,8 +7,8 @@ export const metadata = {
 }
 
 export default async function SecurityPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   const {
     data: { user },

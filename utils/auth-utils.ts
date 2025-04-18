@@ -1,30 +1,27 @@
+"use client"
+
 import { createClient } from "@/utils/supabase/client"
 
-// Get admin emails from environment variables or use default
-const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS
-  ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",")
-  : ["admin@example.com"]
+const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",") ?? ["ronupert@gmail.com"]
 
-// Client-side admin check
 export async function isAdminClient(): Promise<boolean> {
   const supabase = createClient()
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user || !user.email) return false
-  return ADMIN_EMAILS.includes(user.email.toLowerCase())
+  return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())
 }
 
-// Get current user
+// Функция для получения текущего пользователя (клиентская)
 export async function getCurrentUser() {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
+  const { data } = await supabase.auth.getUser()
+  return data.user
 }
 
-// Re-export isAdminServer for backward compatibility
-export { isAdminServer } from "./auth-utils-server"
+// Функция для проверки сессии (клиентская)
+export async function getSession() {
+  const supabase = createClient()
+  const { data } = await supabase.auth.getSession()
+  return data.session
+}

@@ -1,12 +1,11 @@
-import { createClient } from "@/utils/supabase/server"
-
 /**
  * Получает продукт по слагу
  * @param slug Слаг продукта
  * @returns Данные продукта или null, если продукт не найден
  */
 export async function getProductBySlug(slug: string) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   const { data, error } = await supabase
     .from("products")
@@ -35,7 +34,8 @@ export async function getProductBySlug(slug: string) {
  * @returns Данные категории или null, если категория не найдена
  */
 export async function getCategoryBySlug(slug: string) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).single()
 
@@ -53,7 +53,8 @@ export async function getCategoryBySlug(slug: string) {
  * @returns Данные блог-поста или null, если блог-пост не найден
  */
 export async function getBlogPostBySlug(slug: string) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   const { data, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).single()
 
@@ -71,7 +72,8 @@ export async function getBlogPostBySlug(slug: string) {
  * @returns Список продуктов в категории
  */
 export async function getProductsByCategory(categorySlug: string) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   // Сначала получаем ID категории по слагу
   const { data: category, error: categoryError } = await supabase

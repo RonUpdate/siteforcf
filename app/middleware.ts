@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server"
 // Get admin emails from environment variables or use default
 const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS
   ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",")
-  : ["admin@example.com"]
+  : ["ronupert@gmail.com"]
 
 export async function middleware(request: NextRequest) {
   // Создаем ответ для модификации

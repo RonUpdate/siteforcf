@@ -1,23 +1,20 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
-import { cookies } from "next/headers"
+const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",") ?? ["ronupert@gmail.com"]
 
-// Server-side admin check
 export async function isAdminServer(): Promise<boolean> {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())
+}
 
-  if (!user || !user.email) return false
-
-  // Get admin emails from environment variables or use default
-  const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS
-    ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",")
-    : ["admin@example.com"]
-
-  return ADMIN_EMAILS.includes(user.email.toLowerCase())
+// Функция для получения текущего пользователя (серверная)
+export async function getCurrentUserServer() {
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
+  const { data } = await supabase.auth.getUser()
+  return data.user
 }

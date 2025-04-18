@@ -1,8 +1,8 @@
-import { createClient } from "@/utils/supabase/server"
 import ProductForm from "../[action]/product-form"
 
 export default async function CreateProductPage() {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   // Получаем категории для выпадающего списка
   const { data: categories } = await supabase.from("categories").select("id, title").order("title")

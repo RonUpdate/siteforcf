@@ -1,9 +1,6 @@
-import { createClient } from "@/utils/supabase/server"
-import { cookies } from "next/headers"
-
 export async function GET() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   // Fetch all products
   const { data: products } = await supabase.from("products").select("id")

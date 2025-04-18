@@ -1,6 +1,5 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import { ensureUniqueSlug, generateSlug } from "@/utils/slug-utils"
 
@@ -18,7 +17,8 @@ interface ProductUpdateData extends ProductData {
 }
 
 export async function createProduct(data: ProductData) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   try {
     // Если слаг не предоставлен, генерируем его из заголовка
@@ -59,7 +59,8 @@ export async function createProduct(data: ProductData) {
 }
 
 export async function updateProduct(data: ProductUpdateData) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   try {
     // Если слаг не предоставлен, генерируем его из заголовка
@@ -101,7 +102,8 @@ export async function updateProduct(data: ProductUpdateData) {
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   try {
     // Удаляем продукт

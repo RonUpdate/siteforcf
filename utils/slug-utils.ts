@@ -44,8 +44,8 @@ export async function ensureUniqueSlug(
   table: "blog_posts" | "categories" | "products",
   excludeId?: string,
 ): Promise<string> {
-  const { createClient } = await import("@/utils/supabase/server")
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   let uniqueSlug = slug
   let counter = 1

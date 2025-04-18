@@ -5,25 +5,40 @@ import Link from "next/link"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, FileText, User } from "lucide-react"
+import { isAdminClient } from "@/utils/auth-utils"
 
 export default function Header() {
   const [session, setSession] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
-    async function getSession() {
+    async function getSessionAndAdmin() {
       const { data } = await supabase.auth.getSession()
       setSession(data.session)
+
+      if (data.session) {
+        const adminStatus = await isAdminClient()
+        setIsAdmin(adminStatus)
+      }
+
       setLoading(false)
     }
 
-    getSession()
+    getSessionAndAdmin()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
+
+      if (session) {
+        const adminStatus = await isAdminClient()
+        setIsAdmin(adminStatus)
+      } else {
+        setIsAdmin(false)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -65,10 +80,10 @@ export default function Header() {
             </Link>
 
             {!loading && session ? (
-              <Link href="/admin">
+              <Link href={isAdmin ? "/admin" : "/"}>
                 <Button>
                   <User className="h-5 w-5 mr-2" />
-                  Админ-панель
+                  {isAdmin ? "Админ-панель" : "Профиль"}
                 </Button>
               </Link>
             ) : (

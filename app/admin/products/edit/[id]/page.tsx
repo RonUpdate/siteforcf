@@ -1,9 +1,9 @@
-import { createClient } from "@/utils/supabase/server"
-import ProductForm from "../../[action]/product-form"
 import { notFound } from "next/navigation"
+import ProductForm from "../../[action]/product-form"
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const supabase = createClient()
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
 
   // Получаем данные продукта
   const { data: product, error } = await supabase.from("products").select("*").eq("id", params.id).single()
