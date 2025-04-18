@@ -15,9 +15,7 @@ export async function middleware(request: NextRequest) {
   const supabase = createMiddlewareClient({ req: request, res })
 
   // Обновляем сессию если она истекла - необходимо для Server Components
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  await supabase.auth.getSession()
 
   // Проверяем доступ к админке
   if (request.nextUrl.pathname.startsWith("/admin")) {
@@ -30,9 +28,14 @@ export async function middleware(request: NextRequest) {
       return res
     }
 
+    // Получаем сессию
+    const { data } = await supabase.auth.getSession()
+    const session = data.session
+
     if (!session) {
       // Нет сессии - перенаправляем на страницу входа
       const redirectUrl = new URL("/login", request.url)
+      redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
     }
 
@@ -40,8 +43,7 @@ export async function middleware(request: NextRequest) {
 
     if (!isAdmin) {
       // Не админ - перенаправляем на главную
-      const redirectUrl = new URL("/", request.url)
-      return NextResponse.redirect(redirectUrl)
+      return NextResponse.redirect(new URL("/", request.url))
     }
   }
 
@@ -55,7 +57,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public folder
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)",
   ],
 }

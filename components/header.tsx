@@ -1,49 +1,8 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import Link from "next/link"
-import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, FileText, User } from "lucide-react"
-import { isAdminClient } from "@/utils/auth-utils"
 
 export default function Header() {
-  const [session, setSession] = useState<any>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function getSessionAndAdmin() {
-      const { data } = await supabase.auth.getSession()
-      setSession(data.session)
-
-      if (data.session) {
-        const adminStatus = await isAdminClient()
-        setIsAdmin(adminStatus)
-      }
-
-      setLoading(false)
-    }
-
-    getSessionAndAdmin()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-
-      if (session) {
-        const adminStatus = await isAdminClient()
-        setIsAdmin(adminStatus)
-      } else {
-        setIsAdmin(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
-
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4">
@@ -79,21 +38,12 @@ export default function Header() {
               </Button>
             </Link>
 
-            {!loading && session ? (
-              <Link href={isAdmin ? "/admin" : "/"}>
-                <Button>
-                  <User className="h-5 w-5 mr-2" />
-                  {isAdmin ? "Админ-панель" : "Профиль"}
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/login">
-                <Button variant="outline">
-                  <User className="h-5 w-5 mr-2" />
-                  Войти
-                </Button>
-              </Link>
-            )}
+            <Link href="/login">
+              <Button variant="outline">
+                <User className="h-5 w-5 mr-2" />
+                Войти
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
