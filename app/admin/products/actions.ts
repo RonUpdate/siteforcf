@@ -101,23 +101,56 @@ export async function updateProduct(data: ProductUpdateData) {
   }
 }
 
-export async function deleteProduct(id: string) {
+export async function getProductPreviewById(id: string) {
   const { createServerClient } = await import("@/utils/supabase/server")
   const supabase = await createServerClient()
 
   try {
-    // Удаляем продукт
-    const { error } = await supabase.from("products").delete().eq("id", id)
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        category:category_id (
+          id,
+          title,
+          slug
+        )
+      `)
+      .eq("id", id)
+      .single()
 
-    if (error) {
-      console.error("Ошибка при удалении продукта:", error)
-      throw new Error(error.message || "Не удалось удалить продукт")
-    }
+    if (error) throw error
 
-    revalidatePath("/admin/products")
-    return { success: true }
+    return { success: true, product: data }
   } catch (error: any) {
-    console.error("Ошибка при удалении продукта:", error)
-    throw new Error(error.message || "Не удалось удалить продукт")
+    console.error("Ошибка при получении предпросмотра продукта:", error)
+    throw new Error(error.message || "Не удалось получить предпросмотр продукта")
+  }
+}
+
+export async function getProductPreviewBySlug(slug: string) {
+  const { createServerClient } = await import("@/utils/supabase/server")
+  const supabase = await createServerClient()
+
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        category:category_id (
+          id,
+          title,
+          slug
+        )
+      `)
+      .eq("slug", slug)
+      .single()
+
+    if (error) throw error
+
+    return { success: true, product: data }
+  } catch (error: any) {
+    console.error("Ошибка при получении предпросмотра продукта:", error)
+    throw new Error(error.message || "Не удалось получить предпросмотр продукта")
   }
 }

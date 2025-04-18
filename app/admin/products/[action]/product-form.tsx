@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, Eye } from "lucide-react"
 import { createProduct, updateProduct } from "../actions"
 import EnhancedImageUploader from "@/components/enhanced-image-uploader"
 import SlugInput from "@/components/slug-input"
@@ -110,6 +110,20 @@ export default function ProductForm({ product, categories, action }: ProductForm
     }
   }
 
+  // Функция для предварительного просмотра
+  const handlePreview = () => {
+    if (action === "edit" && product) {
+      // Для существующего продукта открываем страницу предпросмотра
+      router.push(`/admin/products/preview/${product.id}`)
+    } else if (slug) {
+      // Для нового продукта сначала сохраняем черновик, затем открываем предпросмотр
+      // Это упрощенная версия - в реальном приложении нужно сохранять черновик
+      alert("Сначала сохраните продукт, чтобы увидеть предварительный просмотр")
+    } else {
+      setError("Заполните название и слаг для предварительного просмотра")
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <Card>
@@ -186,9 +200,19 @@ export default function ProductForm({ product, categories, action }: ProductForm
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-            Отмена
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+              Отмена
+            </Button>
+
+            {action === "edit" && product && (
+              <Button type="button" variant="outline" onClick={handlePreview} disabled={isSubmitting}>
+                <Eye className="mr-2 h-4 w-4" />
+                Предпросмотр
+              </Button>
+            )}
+          </div>
+
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
