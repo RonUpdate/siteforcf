@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/client"
 import ProductCard from "@/components/product-card"
@@ -17,66 +17,66 @@ export default function HomePage() {
 
   const supabase = createClient()
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        // Получаем категории для фильтра
-        const { data: categoriesData } = await supabase.from("categories").select("id, title, slug").order("title")
-        setCategories(categoriesData || [])
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      // Получаем категории для фильтра
+      const { data: categoriesData } = await supabase.from("categories").select("id, title, slug").order("title")
+      setCategories(categoriesData || [])
 
-        // Формируем запрос для продуктов с фильтрацией по категории
-        let productsQuery = supabase
-          .from("products")
-          .select(`
+      // Формируем запрос для продуктов с фильтрацией по категории
+      let productsQuery = supabase
+        .from("products")
+        .select(`
+          id, 
+          title, 
+          description, 
+          image_url, 
+          external_url,
+          categories (
             id, 
-            title, 
-            description, 
-            image_url, 
-            external_url,
-            categories (
-              id, 
-              title,
-              slug
-            )
-          `)
-          .order("created_at", { ascending: false })
-          .limit(6)
+            title,
+            slug
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(6)
 
-        // Применяем фильтр по категории, если он указан
-        if (activeCategory) {
-          const { data: categoryData } = await supabase
-            .from("categories")
-            .select("id")
-            .eq("slug", activeCategory)
-            .single()
+      // Применяем фильтр по категории, если он указан
+      if (activeCategory) {
+        const { data: categoryData } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("slug", activeCategory)
+          .single()
 
-          if (categoryData) {
-            productsQuery = productsQuery.eq("category_id", categoryData.id)
-          }
+        if (categoryData) {
+          productsQuery = productsQuery.eq("category_id", categoryData.id)
         }
-
-        // Выполняем запрос
-        const { data: productsData } = await productsQuery
-        setProducts(productsData || [])
-
-        // Получаем последние блог-посты
-        const { data: blogPostsData } = await supabase
-          .from("blog_posts")
-          .select("id, title, slug, created_at, image_url")
-          .order("created_at", { ascending: false })
-          .limit(3)
-
-        setBlogPosts(blogPostsData || [])
-      } catch (error) {
-        console.error("Error fetching data:", error)
-      } finally {
-        setLoading(false)
       }
-    }
 
-    fetchData()
+      // Выполняем запрос
+      const { data: productsData } = await productsQuery
+      setProducts(productsData || [])
+
+      // Получаем последние блог-посты
+      const { data: blogPostsData } = await supabase
+        .from("blog_posts")
+        .select("id, title, slug, created_at, image_url")
+        .order("created_at", { ascending: false })
+        .limit(3)
+
+      setBlogPosts(blogPostsData || [])
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setLoading(false)
+    }
   }, [supabase, activeCategory])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const handleCategoryChange = (slug: string | null) => {
     setActiveCategory(slug)

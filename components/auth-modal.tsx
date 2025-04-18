@@ -1,11 +1,10 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { X } from "lucide-react"
 import { useRouter } from "next/navigation"
+import type React from "react"
 
 export default function AuthModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("")

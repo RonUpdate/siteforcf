@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Plus, Edit, Trash2, Eye } from "lucide-react"
 import BlogForm from "./blog-form"
@@ -21,7 +21,7 @@ export default function BlogAdmin() {
 
   const supabase = createClient()
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true)
 
     const { data, error } = await supabase
@@ -36,11 +36,11 @@ export default function BlogAdmin() {
     }
 
     setLoading(false)
-  }
+  }, [supabase])
 
   useEffect(() => {
     fetchPosts()
-  }, [])
+  }, [fetchPosts])
 
   const handleEdit = (post: BlogPost) => {
     setEditingPost(post)
