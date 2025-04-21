@@ -37,18 +37,16 @@ export default function CategoryForm({ category, action }: CategoryFormProps) {
     try {
       if (action === "create") {
         await createCategory({ title, slug })
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/categories?success=true&action=create&type=category&title=${encodeURIComponent(title)}`)
       } else if (action === "edit" && category) {
         await updateCategory({ id: category.id, title, slug })
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/categories?success=true&action=update&type=category&title=${encodeURIComponent(title)}`)
       }
 
+      router.push("/admin/categories")
       router.refresh()
     } catch (error: any) {
       console.error("Ошибка при сохранении категории:", error)
       setError(error.message || "Произошла ошибка при сохранении категории")
+    } finally {
       setIsSubmitting(false)
     }
   }

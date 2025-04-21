@@ -1,27 +1,33 @@
-"use client"
-
 import { createClient } from "@/utils/supabase/client"
+import { createClient as createServerClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 
-const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",") ?? ["ronupert@gmail.com"]
-
+// Client-side admin check
 export async function isAdminClient(): Promise<boolean> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user?.email === "admin@example.com"
+}
+
+// Server-side admin check
+export async function isAdminServer(): Promise<boolean> {
+  const cookieStore = cookies()
+  const supabase = createServerClient(cookieStore)
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user?.email === "admin@example.com"
+}
+
+// Get current user
+export async function getCurrentUser() {
   const supabase = createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase())
-}
-
-// Функция для получения текущего пользователя (клиентская)
-export async function getCurrentUser() {
-  const supabase = createClient()
-  const { data } = await supabase.auth.getUser()
-  return data.user
-}
-
-// Функция для проверки сессии (клиентская)
-export async function getSession() {
-  const supabase = createClient()
-  const { data } = await supabase.auth.getSession()
-  return data.session
+  return user
 }

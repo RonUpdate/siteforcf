@@ -1,3 +1,5 @@
+import { createClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { PlusCircle } from "lucide-react"
@@ -8,8 +10,8 @@ export const metadata = {
 }
 
 export default async function ManageBlogPostsPage() {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore)
 
   const {
     data: { user },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import CategoryForm from "./category-form"
@@ -19,7 +19,7 @@ export default function CategoriesAdmin() {
 
   const supabase = createClient()
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = async () => {
     setLoading(true)
 
     const { data, error } = await supabase.from("categories").select("id, title, slug").order("title")
@@ -31,11 +31,11 @@ export default function CategoriesAdmin() {
     }
 
     setLoading(false)
-  }, [supabase])
+  }
 
   useEffect(() => {
     fetchCategories()
-  }, [fetchCategories])
+  }, [])
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category)

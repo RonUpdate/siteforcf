@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, AlertCircle, Eye } from "lucide-react"
+import { Loader2, AlertCircle } from "lucide-react"
 import { createProduct, updateProduct } from "../actions"
 import EnhancedImageUploader from "@/components/enhanced-image-uploader"
 import SlugInput from "@/components/slug-input"
@@ -30,7 +30,6 @@ interface ProductFormProps {
     image_url: string
     external_url: string
     category_id: string
-    slug: string
   }
   categories: Category[]
   action: "create" | "edit"
@@ -39,7 +38,7 @@ interface ProductFormProps {
 export default function ProductForm({ product, categories, action }: ProductFormProps) {
   const router = useRouter()
   const [title, setTitle] = useState(product?.title || "")
-  const [slug, setSlug] = useState(product?.slug || "")
+  const [slug, setSlug] = useState(product ? generateSlug(product.title) : "")
   const [description, setDescription] = useState(product?.description || "")
   const [imageUrl, setImageUrl] = useState(product?.image_url || "")
   const [externalUrl, setExternalUrl] = useState(product?.external_url || "")
@@ -47,34 +46,14 @@ export default function ProductForm({ product, categories, action }: ProductForm
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Генерируем слаг при первой загрузке, если его нет
-  useEffect(() => {
-    if (!slug && title) {
-      setSlug(generateSlug(title))
-    }
-  }, [])
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value
-    setTitle(newTitle)
-    // Слаг будет обновляться автоматически через компонент SlugInput
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Проверяем обязательные поля
-    if (!title || !description || !categoryId || !slug) {
-      setError("Пожалуйста, заполните все обязательные поля")
-      return
-    }
-
     setIsSubmitting(true)
     setError(null)
 
     try {
       if (action === "create") {
-        const result = await createProduct({
+        await createProduct({
           title,
           slug,
           description,
@@ -82,12 +61,8 @@ export default function ProductForm({ product, categories, action }: ProductForm
           external_url: externalUrl,
           category_id: categoryId,
         })
-
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/products?success=true&action=create&type=product&title=${encodeURIComponent(title)}`)
-        router.refresh()
       } else if (action === "edit" && product) {
-        const result = await updateProduct({
+        await updateProduct({
           id: product.id,
           title,
           slug,
@@ -96,31 +71,15 @@ export default function ProductForm({ product, categories, action }: ProductForm
           external_url: externalUrl,
           category_id: categoryId,
         })
-
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/products?success=true&action=update&type=product&title=${encodeURIComponent(title)}`)
-        router.refresh()
       }
+
+      router.push("/admin/products")
+      router.refresh()
     } catch (error: any) {
       console.error("Ошибка при сохранении продукта:", error)
       setError(error.message || "Произошла ошибка при сохранении продукта")
     } finally {
-      // Всегда сбрасываем состояние отправки
       setIsSubmitting(false)
-    }
-  }
-
-  // Функция для предварительного просмотра
-  const handlePreview = () => {
-    if (action === "edit" && product) {
-      // Для существующего продукта открываем страницу предпросмотра
-      router.push(`/admin/products/preview/${product.id}`)
-    } else if (slug) {
-      // Для нового продукта сначала сохраняем черновик, затем открываем предпросмотр
-      // Это упрощенная версия - в реальном приложении нужно сохранять черновик
-      alert("Сначала сохраните продукт, чтобы увидеть предварительный просмотр")
-    } else {
-      setError("Заполните название и слаг для предварительного просмотра")
     }
   }
 
@@ -136,7 +95,7 @@ export default function ProductForm({ product, categories, action }: ProductForm
             <Input
               id="title"
               value={title}
-              onChange={handleTitleChange}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Введите название продукта"
               required
             />
@@ -200,20 +159,10 @@ export default function ProductForm({ product, categories, action }: ProductForm
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-              Отмена
-            </Button>
-
-            {action === "edit" && product && (
-              <Button type="button" variant="outline" onClick={handlePreview} disabled={isSubmitting}>
-                <Eye className="mr-2 h-4 w-4" />
-                Предпросмотр
-              </Button>
-            )}
-          </div>
-
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+            Отмена
+          </Button>
+          <Button type="submit" disabled={isSubmitting || !title || !description || !categoryId}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

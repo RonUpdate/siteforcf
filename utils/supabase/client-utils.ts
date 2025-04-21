@@ -2,11 +2,6 @@
 
 import { createClient } from "@/utils/supabase/client"
 
-// Get admin emails from environment variables or use default
-const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS
-  ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",")
-  : ["admin@example.com"]
-
 // Функция для проверки, является ли пользователь администратором (клиентская сторона)
 export async function isAdmin(): Promise<boolean> {
   const supabase = createClient()
@@ -14,8 +9,7 @@ export async function isAdmin(): Promise<boolean> {
   const { data } = await supabase.auth.getUser()
   const user = data.user
 
-  if (!user || !user.email) return false
-  return ADMIN_EMAILS.includes(user.email.toLowerCase())
+  return user?.email === "admin@example.com" || user?.email === "ronupert@gmail.com"
 }
 
 // Функция для получения текущего пользователя

@@ -43,18 +43,16 @@ export default function BlogPostForm({ blogPost, action }: BlogPostFormProps) {
     try {
       if (action === "create") {
         await createBlogPost({ title, slug, content, image_url: imageUrl })
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/blog-posts?success=true&action=create&type=blog&title=${encodeURIComponent(title)}`)
       } else if (action === "edit" && blogPost) {
         await updateBlogPost({ id: blogPost.id, title, slug, content, image_url: imageUrl })
-        // Перенаправляем с параметрами для уведомления
-        router.push(`/admin/blog-posts?success=true&action=update&type=blog&title=${encodeURIComponent(title)}`)
       }
 
+      router.push("/admin/blog-posts")
       router.refresh()
     } catch (error: any) {
       console.error("Ошибка при сохранении блог-поста:", error)
       setError(error.message || "Произошла ошибка при сохранении блог-поста")
+    } finally {
       setIsSubmitting(false)
     }
   }

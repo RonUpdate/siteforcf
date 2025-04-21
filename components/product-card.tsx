@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink } from 'lucide-react'
 
 interface Product {
   id: string
@@ -54,7 +54,7 @@ export default function ProductCard({ product, showActions = false }: ProductCar
         )}
         {showActions && (
           <div className="flex space-x-2">
-            <Link href={`/admin/products/edit/${product.id}`}>
+            <Link href={`/admin/products/${product.id}`}>
               <Button variant="outline" size="sm">
                 Редактировать
               </Button>

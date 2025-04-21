@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { Plus, Edit, Trash2, ExternalLink } from "lucide-react"
 import ProductForm from "./product-form"
@@ -30,7 +30,7 @@ export default function ProductsAdmin() {
 
   const supabase = createClient()
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = async () => {
     setLoading(true)
 
     const { data, error } = await supabase
@@ -54,11 +54,11 @@ export default function ProductsAdmin() {
     }
 
     setLoading(false)
-  }, [supabase])
+  }
 
   useEffect(() => {
     fetchProducts()
-  }, [fetchProducts])
+  }, [])
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product)

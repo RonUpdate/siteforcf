@@ -1,11 +1,12 @@
+import { createClient } from "@/utils/supabase/server"
+
 /**
  * Получает продукт по слагу
  * @param slug Слаг продукта
  * @returns Данные продукта или null, если продукт не найден
  */
 export async function getProductBySlug(slug: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase
     .from("products")
@@ -34,8 +35,7 @@ export async function getProductBySlug(slug: string) {
  * @returns Данные категории или null, если категория не найдена
  */
 export async function getCategoryBySlug(slug: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).single()
 
@@ -53,8 +53,7 @@ export async function getCategoryBySlug(slug: string) {
  * @returns Данные блог-поста или null, если блог-пост не найден
  */
 export async function getBlogPostBySlug(slug: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   const { data, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).single()
 
@@ -67,37 +66,36 @@ export async function getBlogPostBySlug(slug: string) {
 }
 
 /**
- * Получает продукты по слагу категории
- * @param slug Слаг категории
- * @returns Данные продуктов или null, если продукты не найдены
+ * Получает продукты по категории
+ * @param categorySlug Слаг категории
+ * @returns Список продуктов в категории
  */
-export async function getProductsByCategory(slug: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+export async function getProductsByCategory(categorySlug: string) {
+  const supabase = createClient()
 
-  const { data: category } = await supabase.from("categories").select("id").eq("slug", slug).single()
+  // Сначала получаем ID категории по слагу
+  const { data: category, error: categoryError } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", categorySlug)
+    .single()
 
-  if (!category) {
-    console.error("Категория не найдена")
-    return null
+  if (categoryError || !category) {
+    console.error("Ошибка при получении категории:", categoryError)
+    return []
   }
 
-  const { data, error } = await supabase
+  // Затем получаем продукты по ID категории
+  const { data: products, error: productsError } = await supabase
     .from("products")
-    .select(`
-      *,
-      categories:category_id (
-        id,
-        title,
-        slug
-      )
-    `)
+    .select("*")
     .eq("category_id", category.id)
+    .order("created_at", { ascending: false })
 
-  if (error) {
-    console.error("Ошибка при получении продуктов по категории:", error)
-    return null
+  if (productsError) {
+    console.error("Ошибка при получении продуктов:", productsError)
+    return []
   }
 
-  return data
+  return products
 }

@@ -1,9 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
-import type React from "react"
 
 interface Category {
   id: string

@@ -6,20 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle, RefreshCw, UserPlus } from "lucide-react"
-import Link from "next/link"
-
-// Get admin emails from environment variables or use default
-const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS
-  ? process.env.NEXT_PUBLIC_ADMIN_EMAILS.split(",")
-  : ["admin@example.com"]
-
-// Default admin email is the first in the list
-const DEFAULT_ADMIN_EMAIL = ADMIN_EMAILS[0]
 
 export default function AdminSetupPage() {
-  const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL)
+  const [email, setEmail] = useState("admin@example.com")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [checkingUser, setCheckingUser] = useState(true)
@@ -34,7 +26,7 @@ export default function AdminSetupPage() {
     checkAdminUser()
   }, [])
 
-  // Функция для проверки существования администратора
+  // Функция для проверки существования пользователя admin@example.com
   const checkAdminUser = async () => {
     setCheckingUser(true)
     setMessage(null)
@@ -50,26 +42,67 @@ export default function AdminSetupPage() {
           data: { user },
         } = await supabase.auth.getUser()
 
-        if (user && ADMIN_EMAILS.includes(user.email?.toLowerCase() || "")) {
+        if (user && user.email === "admin@example.com") {
           setUserExists(true)
           setAdminUser(user)
           setMessage({
             type: "success",
-            text: `Вы вошли в систему как администратор (${user.email}).`,
+            text: "Пользователь admin@example.com существует и вы вошли в систему как этот пользователь.",
           })
         } else {
+          // Если текущий пользователь не admin@example.com, проверяем существование admin@example.com
+          const { data, error } = await supabase.auth.admin.listUsers()
+
+          if (error) {
+            throw error
+          }
+
+          const adminUser = data.users.find((user) => user.email === "admin@example.com")
+
+          if (adminUser) {
+            setUserExists(true)
+            setAdminUser(adminUser)
+            setMessage({
+              type: "info",
+              text: "Пользователь admin@example.com существует, но вы не вошли в систему как этот пользователь.",
+            })
+          } else {
+            setUserExists(false)
+            setMessage({
+              type: "info",
+              text: "Пользователь admin@example.com не существует.",
+            })
+          }
+        }
+      } else {
+        // Если нет активной сессии, проверяем существование admin@example.com
+        const { data, error } = await supabase.auth.admin.listUsers()
+
+        if (error) {
+          // Если нет прав администратора, пробуем другой подход
           setUserExists(false)
           setMessage({
             type: "info",
-            text: `Вы вошли как ${user?.email}, но этот пользователь не является администратором.`,
+            text: "Невозможно проверить существование пользователя. Попробуйте войти как admin@example.com.",
           })
+        } else {
+          const adminUser = data.users.find((user) => user.email === "admin@example.com")
+
+          if (adminUser) {
+            setUserExists(true)
+            setAdminUser(adminUser)
+            setMessage({
+              type: "info",
+              text: "Пользователь admin@example.com существует, но вы не вошли в систему.",
+            })
+          } else {
+            setUserExists(false)
+            setMessage({
+              type: "info",
+              text: "Пользователь admin@example.com не существует.",
+            })
+          }
         }
-      } else {
-        setUserExists(false)
-        setMessage({
-          type: "info",
-          text: "Вы не вошли в систему. Создайте учетную запись администратора или войдите в существующую.",
-        })
       }
     } catch (error: any) {
       console.error("Ошибка при проверке пользователя:", error)
@@ -82,7 +115,7 @@ export default function AdminSetupPage() {
     }
   }
 
-  // Функция для создания пользователя администратора
+  // Функция для создания пользователя admin@example.com
   const createAdminUser = async () => {
     if (!password || password.length < 6) {
       setMessage({
@@ -96,31 +129,60 @@ export default function AdminSetupPage() {
     setMessage(null)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
+      // Создаем нового пользователя
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: "admin@example.com",
         password,
-        options: {
-          data: { role: "admin" },
-        },
+        email_confirm: true, // Автоматически подтверждаем email
+        user_metadata: { role: "admin" },
       })
 
       if (error) throw error
 
+      setUserExists(true)
+      setAdminUser(data.user)
       setMessage({
         type: "success",
-        text: `Пользователь ${email} успешно зарегистрирован! Проверьте почту для подтверждения.`,
+        text: "Пользователь admin@example.com успешно создан!",
       })
     } catch (error: any) {
-      setMessage({
-        type: "error",
-        text: `Ошибка при регистрации пользователя: ${error.message}`,
-      })
+      console.error("Ошибка при создании пользователя:", error)
+
+      // Если нет прав администратора, предлагаем использовать обычную регистрацию
+      if (error.message.includes("not authorized")) {
+        try {
+          const { data, error: signUpError } = await supabase.auth.signUp({
+            email: "admin@example.com",
+            password,
+            options: {
+              data: { role: "admin" },
+            },
+          })
+
+          if (signUpError) throw signUpError
+
+          setMessage({
+            type: "success",
+            text: "Пользователь admin@example.com успешно зарегистрирован! Проверьте почту для подтверждения.",
+          })
+        } catch (signUpError: any) {
+          setMessage({
+            type: "error",
+            text: `Ошибка при регистрации пользователя: ${signUpError.message}`,
+          })
+        }
+      } else {
+        setMessage({
+          type: "error",
+          text: `Ошибка при создании пользователя: ${error.message}`,
+        })
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Функция для входа как администратор
+  // Функция для входа как admin@example.com
   const signInAsAdmin = async () => {
     if (!password) {
       setMessage({
@@ -135,7 +197,7 @@ export default function AdminSetupPage() {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: "admin@example.com",
         password,
       })
 
@@ -144,7 +206,7 @@ export default function AdminSetupPage() {
       setAdminUser(data.user)
       setMessage({
         type: "success",
-        text: `Вы успешно вошли как ${email}!`,
+        text: "Вы успешно вошли как admin@example.com!",
       })
 
       // Перезагружаем страницу для обновления сессии
@@ -162,18 +224,18 @@ export default function AdminSetupPage() {
 
   return (
     <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6">Настройка администратора</h1>
+      <h1 className="text-3xl font-bold mb-6">Настройка администратора Supabase</h1>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Статус администратора</CardTitle>
-          <CardDescription>Администраторы: {ADMIN_EMAILS.join(", ")}</CardDescription>
+          <CardTitle>Статус пользователя admin@example.com</CardTitle>
+          <CardDescription>Проверка существования пользователя admin@example.com в Supabase</CardDescription>
         </CardHeader>
         <CardContent>
           {checkingUser ? (
             <div className="flex items-center space-x-2">
               <RefreshCw className="h-4 w-4 animate-spin" />
-              <p>Проверка статуса...</p>
+              <p>Проверка пользователя...</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -201,10 +263,16 @@ export default function AdminSetupPage() {
                 <div className="bg-secondary p-4 rounded-md">
                   <h3 className="font-medium mb-2">Информация о пользователе:</h3>
                   <p>
+                    <strong>ID:</strong> {adminUser.id}
+                  </p>
+                  <p>
                     <strong>Email:</strong> {adminUser.email}
                   </p>
                   <p>
                     <strong>Создан:</strong> {new Date(adminUser.created_at).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Подтвержден:</strong> {adminUser.email_confirmed_at ? "Да" : "Нет"}
                   </p>
                   <p>
                     <strong>Роль:</strong> {adminUser.role || adminUser.user_metadata?.role || "Не указана"}
@@ -228,22 +296,22 @@ export default function AdminSetupPage() {
         </CardFooter>
       </Card>
 
-      {!userExists && (
-        <div className="grid gap-6 md:grid-cols-2">
+      <Tabs defaultValue={userExists ? "signin" : "create"}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="create">Создать пользователя</TabsTrigger>
+          <TabsTrigger value="signin">Войти как admin</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="create">
           <Card>
             <CardHeader>
-              <CardTitle>Создать администратора</CardTitle>
-              <CardDescription>Создайте нового пользователя-администратора</CardDescription>
+              <CardTitle>Создать пользователя admin@example.com</CardTitle>
+              <CardDescription>Создайте нового пользователя с email admin@example.com</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="admin-email">Email</Label>
-                <Input
-                  id="admin-email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email администратора"
-                />
+                <Input id="admin-email" value={email} onChange={(e) => setEmail(e.target.value)} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="admin-password">Пароль</Label>
@@ -257,7 +325,7 @@ export default function AdminSetupPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={createAdminUser} disabled={loading}>
+              <Button onClick={createAdminUser} disabled={loading || userExists}>
                 {loading ? (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -266,27 +334,24 @@ export default function AdminSetupPage() {
                 ) : (
                   <>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Создать администратора
+                    Создать пользователя
                   </>
                 )}
               </Button>
             </CardFooter>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="signin">
           <Card>
             <CardHeader>
-              <CardTitle>Войти как администратор</CardTitle>
-              <CardDescription>Войдите в систему с учетными данными администратора</CardDescription>
+              <CardTitle>Войти как admin@example.com</CardTitle>
+              <CardDescription>Войдите в систему с учетными данными admin@example.com</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="signin-email">Email</Label>
-                <Input
-                  id="signin-email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email администратора"
-                />
+                <Input id="signin-email" value={email} onChange={(e) => setEmail(e.target.value)} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signin-password">Пароль</Label>
@@ -312,25 +377,23 @@ export default function AdminSetupPage() {
               </Button>
             </CardFooter>
           </Card>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
-      {userExists && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Доступ к админ-панели</CardTitle>
-            <CardDescription>Вы успешно авторизованы как администратор</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Теперь вы можете перейти в административную панель для управления сайтом.</p>
-          </CardContent>
-          <CardFooter>
-            <Link href="/admin">
-              <Button>Перейти в админ-панель</Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      )}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">Следующие шаги</h2>
+        <ol className="list-decimal pl-5 space-y-2">
+          <li>Создайте пользователя admin@example.com, если он не существует</li>
+          <li>Войдите в систему с учетными данными admin@example.com</li>
+          <li>
+            Проверьте доступ к админ-панели по адресу{" "}
+            <a href="/admin" className="text-blue-600 hover:underline">
+              /admin
+            </a>
+          </li>
+          <li>Если проблемы с доступом остаются, проверьте настройки политик безопасности в Supabase</li>
+        </ol>
+      </div>
     </div>
   )
 }

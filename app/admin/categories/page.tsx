@@ -2,23 +2,15 @@ import { createClient } from "@/utils/supabase/server"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Pencil, Trash2, ArrowLeft } from "lucide-react"
-import { deleteProduct } from "./actions"
+import { deleteCategory } from "./actions"
 import DeleteButton from "@/components/delete-button"
 
-export default async function ProductsPage() {
+export default async function CategoriesPage() {
   const supabase = createClient()
-  const { data: products, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      categories:category_id (
-        title
-      )
-    `)
-    .order("title", { ascending: true })
+  const { data: categories, error } = await supabase.from("categories").select("*").order("title", { ascending: true })
 
   if (error) {
-    console.error("Ошибка при получении продуктов:", error)
+    console.error("Ошибка при получении категорий:", error)
   }
 
   return (
@@ -30,19 +22,19 @@ export default async function ProductsPage() {
             Назад к админ-панели
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">Управление продуктами</h1>
+        <h1 className="text-3xl font-bold">Управление категориями</h1>
       </div>
 
       <div className="mb-6">
-        <Link href="/admin/products/create">
+        <Link href="/admin/categories/create">
           <Button>
             <PlusCircle className="h-4 w-4 mr-2" />
-            Создать продукт
+            Создать категорию
           </Button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -50,45 +42,39 @@ export default async function ProductsPage() {
                 Название
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Слаг</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Категория
-              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Действия
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products && products.length > 0 ? (
-              products.map((product) => (
-                <tr key={product.id}>
+            {categories && categories.length > 0 ? (
+              categories.map((category) => (
+                <tr key={category.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{product.title}</div>
+                    <div className="text-sm font-medium text-gray-900">{category.title}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 font-mono">{product.slug}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">
-                      {product.categories ? product.categories.title : "Нет категории"}
-                    </div>
+                    <div className="text-sm text-gray-500 font-mono">{category.slug}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
-                      <Link href={`/admin/products/edit?id=${product.id}`}>
+                      <Link href={`/admin/categories/edit?id=${category.id}`}>
                         <Button variant="outline" size="sm">
                           <Pencil className="h-4 w-4 mr-2" />
                           Редактировать
                         </Button>
                       </Link>
                       <DeleteButton
-                        id={product.id}
-                        name={product.title}
-                        deleteFunction={deleteProduct}
-                        entityName="продукт"
+                        id={category.id}
+                        name={category.title}
+                        deleteFunction={deleteCategory}
+                        entityName="категорию"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Удалить
+                        <span className="flex items-center">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Удалить
+                        </span>
                       </DeleteButton>
                     </div>
                   </td>
@@ -96,8 +82,8 @@ export default async function ProductsPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                  Продукты не найдены
+                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                  Категории не найдены
                 </td>
               </tr>
             )}

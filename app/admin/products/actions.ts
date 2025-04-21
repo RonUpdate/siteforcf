@@ -1,7 +1,8 @@
 "use server"
 
+import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
-import { ensureUniqueSlug, generateSlug } from "@/utils/slug-utils"
+import { ensureUniqueSlug } from "@/utils/slug-utils"
 
 interface ProductData {
   title: string
@@ -17,41 +18,26 @@ interface ProductUpdateData extends ProductData {
 }
 
 export async function createProduct(data: ProductData) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
-    // Если слаг не предоставлен, генерируем его из заголовка
-    const slugToUse = data.slug || generateSlug(data.title)
-
-    if (!slugToUse) {
-      throw new Error("Слаг не может быть пустым")
-    }
-
     // Проверяем и обеспечиваем уникальность слага
-    const uniqueSlug = await ensureUniqueSlug(slugToUse, "products")
+    const uniqueSlug = await ensureUniqueSlug(data.slug, "products")
 
     // Создаем продукт с уникальным слагом
-    const { error, data: newProduct } = await supabase
-      .from("products")
-      .insert({
-        title: data.title,
-        slug: uniqueSlug,
-        description: data.description,
-        image_url: data.image_url || null,
-        external_url: data.external_url || null,
-        category_id: data.category_id,
-      })
-      .select()
-      .single()
+    const { error } = await supabase.from("products").insert({
+      title: data.title,
+      slug: uniqueSlug, // Добавляем слаг в таблицу продуктов
+      description: data.description,
+      image_url: data.image_url,
+      external_url: data.external_url,
+      category_id: data.category_id,
+    })
 
-    if (error) {
-      console.error("Ошибка при создании продукта:", error)
-      throw new Error(error.message || "Не удалось создать продукт")
-    }
+    if (error) throw error
 
     revalidatePath("/admin/products")
-    return { success: true, product: newProduct }
+    return { success: true }
   } catch (error: any) {
     console.error("Ошибка при создании продукта:", error)
     throw new Error(error.message || "Не удалось создать продукт")
@@ -59,98 +45,48 @@ export async function createProduct(data: ProductData) {
 }
 
 export async function updateProduct(data: ProductUpdateData) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
-    // Если слаг не предоставлен, генерируем его из заголовка
-    const slugToUse = data.slug || generateSlug(data.title)
-
-    if (!slugToUse) {
-      throw new Error("Слаг не может быть пустым")
-    }
-
     // Проверяем и обеспечиваем уникальность слага, исключая текущую запись
-    const uniqueSlug = await ensureUniqueSlug(slugToUse, "products", data.id)
+    const uniqueSlug = await ensureUniqueSlug(data.slug, "products", data.id)
 
     // Обновляем продукт с уникальным слагом
-    const { error, data: updatedProduct } = await supabase
+    const { error } = await supabase
       .from("products")
       .update({
         title: data.title,
-        slug: uniqueSlug,
+        slug: uniqueSlug, // Обновляем слаг в таблице продуктов
         description: data.description,
-        image_url: data.image_url || null,
-        external_url: data.external_url || null,
+        image_url: data.image_url,
+        external_url: data.external_url,
         category_id: data.category_id,
       })
       .eq("id", data.id)
-      .select()
-      .single()
 
-    if (error) {
-      console.error("Ошибка при обновлении продукта:", error)
-      throw new Error(error.message || "Не удалось обновить продукт")
-    }
+    if (error) throw error
 
     revalidatePath("/admin/products")
-    return { success: true, product: updatedProduct }
+    return { success: true }
   } catch (error: any) {
     console.error("Ошибка при обновлении продукта:", error)
     throw new Error(error.message || "Не удалось обновить продукт")
   }
 }
 
-export async function getProductPreviewById(id: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+export async function deleteProduct(id: string) {
+  const supabase = createClient()
 
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select(`
-        *,
-        category:category_id (
-          id,
-          title,
-          slug
-        )
-      `)
-      .eq("id", id)
-      .single()
+    // Удаляем продукт
+    const { error } = await supabase.from("products").delete().eq("id", id)
 
     if (error) throw error
 
-    return { success: true, product: data }
+    revalidatePath("/admin/products")
+    return { success: true }
   } catch (error: any) {
-    console.error("Ошибка при получении предпросмотра продукта:", error)
-    throw new Error(error.message || "Не удалось получить предпросмотр продукта")
-  }
-}
-
-export async function getProductPreviewBySlug(slug: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
-
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select(`
-        *,
-        category:category_id (
-          id,
-          title,
-          slug
-        )
-      `)
-      .eq("slug", slug)
-      .single()
-
-    if (error) throw error
-
-    return { success: true, product: data }
-  } catch (error: any) {
-    console.error("Ошибка при получении предпросмотра продукта:", error)
-    throw new Error(error.message || "Не удалось получить предпросмотр продукта")
+    console.error("Ошибка при удалении продукта:", error)
+    throw new Error(error.message || "Не удалось удалить продукт")
   }
 }

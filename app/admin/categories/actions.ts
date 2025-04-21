@@ -1,7 +1,8 @@
 "use server"
 
+import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
-import { ensureUniqueSlug, generateSlug } from "@/utils/slug-utils"
+import { ensureUniqueSlug } from "@/utils/slug-utils"
 
 interface CategoryData {
   title: string
@@ -13,19 +14,11 @@ interface CategoryUpdateData extends CategoryData {
 }
 
 export async function createCategory(data: CategoryData) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
-    // Если слаг не предоставлен, генерируем его из заголовка
-    const slugToUse = data.slug || generateSlug(data.title)
-
-    if (!slugToUse) {
-      throw new Error("Слаг не может быть пустым")
-    }
-
     // Проверяем и обеспечиваем уникальность слага
-    const uniqueSlug = await ensureUniqueSlug(slugToUse, "categories")
+    const uniqueSlug = await ensureUniqueSlug(data.slug, "categories")
 
     // Создаем категорию с уникальным слагом
     const { error } = await supabase.from("categories").insert({
@@ -33,10 +26,7 @@ export async function createCategory(data: CategoryData) {
       slug: uniqueSlug,
     })
 
-    if (error) {
-      console.error("Ошибка при создании категории:", error)
-      throw new Error(error.message || "Не удалось создать категорию")
-    }
+    if (error) throw error
 
     revalidatePath("/admin/categories")
     return { success: true }
@@ -47,19 +37,11 @@ export async function createCategory(data: CategoryData) {
 }
 
 export async function updateCategory(data: CategoryUpdateData) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
-    // Если слаг не предоставлен, генерируем его из заголовка
-    const slugToUse = data.slug || generateSlug(data.title)
-
-    if (!slugToUse) {
-      throw new Error("Слаг не может быть пустым")
-    }
-
     // Проверяем и обеспечиваем уникальность слага, исключая текущую запись
-    const uniqueSlug = await ensureUniqueSlug(slugToUse, "categories", data.id)
+    const uniqueSlug = await ensureUniqueSlug(data.slug, "categories", data.id)
 
     // Обновляем категорию с уникальным слагом
     const { error } = await supabase
@@ -70,10 +52,7 @@ export async function updateCategory(data: CategoryUpdateData) {
       })
       .eq("id", data.id)
 
-    if (error) {
-      console.error("Ошибка при обновлении категории:", error)
-      throw new Error(error.message || "Не удалось обновить категорию")
-    }
+    if (error) throw error
 
     revalidatePath("/admin/categories")
     return { success: true }
@@ -84,17 +63,25 @@ export async function updateCategory(data: CategoryUpdateData) {
 }
 
 export async function deleteCategory(id: string) {
-  const { createServerClient } = await import("@/utils/supabase/server")
-  const supabase = await createServerClient()
+  const supabase = createClient()
 
   try {
+    // Проверяем, есть ли продукты, связанные с этой категорией
+    const { count, error: countError } = await supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("category_id", id)
+
+    if (countError) throw countError
+
+    if (count && count > 0) {
+      throw new Error(`Нельзя удалить категорию, так как с ней связано ${count} продуктов`)
+    }
+
     // Удаляем категорию
     const { error } = await supabase.from("categories").delete().eq("id", id)
 
-    if (error) {
-      console.error("Ошибка при удалении категории:", error)
-      throw new Error(error.message || "Не удалось удалить категорию")
-    }
+    if (error) throw error
 
     revalidatePath("/admin/categories")
     return { success: true }
