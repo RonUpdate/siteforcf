@@ -91,3 +91,13 @@ export interface OrderItem {
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled"
 export type PaymentMethod = "cash" | "card" | "bank_transfer"
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded"
+
+// Добавим новый тип для заметок
+export interface Note {
+  id: string
+  user_id: string
+  title: string
+  content: string | null
+  created_at: string
+  updated_at: string
+}

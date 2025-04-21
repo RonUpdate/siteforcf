@@ -1,14 +1,29 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { LayoutDashboard, Package, FolderTree, FileText, Users, ShoppingCart, Settings, LogOut } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export function AdminSidebar() {
+  const router = useRouter()
   const pathname = usePathname()
+  const supabase = createClientComponentClient()
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(`${path}/`)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+
+      // Принудительное перенаправление на страницу входа
+      window.location.href = "/login"
+    } catch (error) {
+      console.error("Ошибка при выходе из системы:", error)
+      alert("Ошибка при выходе из системы. Попробуйте еще раз.")
+    }
   }
 
   const menuItems = [
@@ -74,13 +89,13 @@ export function AdminSidebar() {
       </nav>
 
       <div className="border-t border-gray-700 p-4">
-        <Link
-          href="/admin/logout"
-          className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+        <button
+          onClick={handleLogout}
+          className="group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
           Выйти
-        </Link>
+        </button>
       </div>
     </div>
   )

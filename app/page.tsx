@@ -1,68 +1,224 @@
 import Link from "next/link"
 import Image from "next/image"
+import { Suspense } from "react"
 import { createServerClientSafe } from "@/lib/supabase/server-safe"
+import { Loading } from "@/components/ui/loading"
 import type { Product, Category, BlogPost } from "@/lib/types"
+import { cache } from "react"
 
-async function getFeaturedProducts() {
-  const supabase = createServerClientSafe()
+// Cache the featured products fetching
+const getFeaturedProductsCached = cache(async () => {
+  try {
+    const supabase = createServerClientSafe()
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*)
-    `)
-    .eq("featured", true)
-    .order("created_at", { ascending: false })
-    .limit(4)
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        category:categories(*),
+        images:product_images(*)
+      `)
+      .eq("featured", true)
+      .order("created_at", { ascending: false })
+      .limit(4)
 
-  if (error) {
+    if (error) {
+      console.error("Error fetching featured products:", error)
+      return []
+    }
+
+    return data as (Product & { category: Category; images: any[] })[]
+  } catch (error) {
     console.error("Error fetching featured products:", error)
     return []
   }
+})
 
-  return data as (Product & { category: Category; images: any[] })[]
-}
+// Cache the categories fetching
+const getCategoriesCached = cache(async () => {
+  try {
+    const supabase = createServerClientSafe()
 
-async function getCategories() {
-  const supabase = createServerClientSafe()
+    const { data, error } = await supabase.from("categories").select("*").limit(6)
 
-  const { data, error } = await supabase.from("categories").select("*").limit(6)
+    if (error) {
+      console.error("Error fetching categories:", error)
+      return []
+    }
 
-  if (error) {
+    return data as Category[]
+  } catch (error) {
     console.error("Error fetching categories:", error)
     return []
   }
+})
 
-  return data as Category[]
-}
+// Cache the latest blog posts fetching
+const getLatestBlogPostsCached = cache(async () => {
+  try {
+    const supabase = createServerClientSafe()
 
-async function getLatestBlogPosts() {
-  const supabase = createServerClientSafe()
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("*")
+      .eq("published", true)
+      .order("published_at", { ascending: false })
+      .limit(3)
 
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .select("*")
-    .eq("published", true)
-    .order("published_at", { ascending: false })
-    .limit(3)
+    if (error) {
+      console.error("Error fetching blog posts:", error)
+      return []
+    }
 
-  if (error) {
+    return data as BlogPost[]
+  } catch (error) {
     console.error("Error fetching blog posts:", error)
     return []
   }
+})
 
-  return data as BlogPost[]
+// Featured Products component
+async function FeaturedProducts() {
+  const featuredProducts = await getFeaturedProductsCached()
+
+  return (
+    <section className="py-12">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-8 text-center">Популярные товары</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {featuredProducts.map((product) => (
+            <Link key={product.id} href={`/products/${product.slug}`} className="group">
+              <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <div className="relative h-64 w-full">
+                  <Image
+                    src={
+                      product.images?.find((img) => img.is_primary)?.image_url ||
+                      `/placeholder.svg?height=400&width=400&query=${encodeURIComponent(product.name) || "/placeholder.svg"}`
+                    }
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      {product.discount_price ? (
+                        <>
+                          <span className="text-gray-400 line-through mr-2">{product.price} ₽</span>
+                          <span className="text-red-600 font-semibold">{product.discount_price} ₽</span>
+                        </>
+                      ) : (
+                        <span className="font-semibold">{product.price} ₽</span>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-500">{product.category?.name || "Без категории"}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link
+            href="/products"
+            className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+          >
+            Все товары
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
 }
 
-export default async function Home() {
-  const [featuredProducts, categories, latestPosts] = await Promise.all([
-    getFeaturedProducts(),
-    getCategories(),
-    getLatestBlogPosts(),
-  ])
+// Categories component
+async function CategoriesSection() {
+  const categories = await getCategoriesCached()
 
+  return (
+    <section className="py-12 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-8 text-center">Категории</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categories.map((category) => (
+            <Link key={category.id} href={`/categories/${category.slug}`} className="group">
+              <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <div className="relative h-48 w-full">
+                  <Image
+                    src={
+                      category.image_url ||
+                      `/placeholder.svg?height=300&width=400&query=${encodeURIComponent(category.name) || "/placeholder.svg"} category`
+                    }
+                    alt={category.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-center">{category.name}</h3>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Latest Blog Posts component
+async function LatestBlogPosts() {
+  const latestPosts = await getLatestBlogPostsCached()
+
+  return (
+    <section className="py-12">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-8 text-center">Блог</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {latestPosts.map((post) => (
+            <Link key={post.id} href={`/blog/${post.slug}`} className="group">
+              <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow h-full flex flex-col">
+                <div className="relative h-48 w-full">
+                  <Image
+                    src={
+                      post.featured_image ||
+                      `/placeholder.svg?height=300&width=400&query=${encodeURIComponent(post.title) || "/placeholder.svg"}`
+                    }
+                    alt={post.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4 flex-grow">
+                  <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                  <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+                  <div className="flex justify-between items-center mt-auto">
+                    <span className="text-sm text-gray-500">
+                      {new Date(post.published_at || post.created_at).toLocaleDateString("ru-RU")}
+                    </span>
+                    <span className="text-sm font-medium text-gray-800">{post.author || "Админ"}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link
+            href="/blog"
+            className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+          >
+            Все статьи
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default function Home() {
   return (
     <div>
       {/* Hero Section */}
@@ -95,127 +251,19 @@ export default async function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Популярные товары</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <Link key={product.id} href={`/products/${product.slug}`} className="group">
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative h-64 w-full">
-                    <Image
-                      src={
-                        product.images?.find((img) => img.is_primary)?.image_url ||
-                        `/placeholder.svg?height=400&width=400&query=${encodeURIComponent(product.name) || "/placeholder.svg"}`
-                      }
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        {product.discount_price ? (
-                          <>
-                            <span className="text-gray-400 line-through mr-2">{product.price} ₽</span>
-                            <span className="text-red-600 font-semibold">{product.discount_price} ₽</span>
-                          </>
-                        ) : (
-                          <span className="font-semibold">{product.price} ₽</span>
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-500">{product.category?.name || "Без категории"}</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link
-              href="/products"
-              className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
-            >
-              Все товары
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={<Loading message="Загрузка популярных товаров..." />}>
+        <FeaturedProducts />
+      </Suspense>
 
       {/* Categories */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Категории</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => (
-              <Link key={category.id} href={`/categories/${category.slug}`} className="group">
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={
-                        category.image_url ||
-                        `/placeholder.svg?height=300&width=400&query=${encodeURIComponent(category.name) || "/placeholder.svg"} category`
-                      }
-                      alt={category.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-center">{category.name}</h3>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={<Loading message="Загрузка категорий..." className="bg-gray-50" />}>
+        <CategoriesSection />
+      </Suspense>
 
       {/* Latest Blog Posts */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Блог</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {latestPosts.map((post) => (
-              <Link key={post.id} href={`/blog/${post.slug}`} className="group">
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow h-full flex flex-col">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={
-                        post.featured_image ||
-                        `/placeholder.svg?height=300&width=400&query=${encodeURIComponent(post.title) || "/placeholder.svg"}`
-                      }
-                      alt={post.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-4 flex-grow">
-                    <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-                    <div className="flex justify-between items-center mt-auto">
-                      <span className="text-sm text-gray-500">
-                        {new Date(post.published_at || post.created_at).toLocaleDateString("ru-RU")}
-                      </span>
-                      <span className="text-sm font-medium text-gray-800">{post.author || "Админ"}</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link
-              href="/blog"
-              className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
-            >
-              Все статьи
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={<Loading message="Загрузка статей блога..." />}>
+        <LatestBlogPosts />
+      </Suspense>
     </div>
   )
 }

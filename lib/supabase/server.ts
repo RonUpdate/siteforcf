@@ -1,9 +1,7 @@
-// Экспортируем только безопасные версии клиентов
-import { createServerClientSafe } from "./server-safe"
-import { createServerClientLegacy } from "./server-legacy"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 
-// Основной экспорт - безопасная версия
-export const createServerClient = createServerClientSafe
-
-// Реэкспортируем legacy версию для использования в pages/ директории
-export { createServerClientLegacy }
+export const createServerClient = () => {
+  const cookieStore = cookies()
+  return createServerComponentClient({ cookies: () => cookieStore })
+}

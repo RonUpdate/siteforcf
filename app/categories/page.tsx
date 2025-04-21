@@ -2,14 +2,28 @@ import Link from "next/link"
 import Image from "next/image"
 import { createServerClientSafe } from "@/lib/supabase/server-safe"
 import type { Category } from "@/lib/types"
+import { cache } from "react"
+
+// Cache the categories fetching
+const getCategoriesCached = cache(async () => {
+  try {
+    const supabase = createServerClientSafe()
+    const { data, error } = await supabase.from("categories").select("*").order("name")
+
+    if (error) {
+      console.error("Error fetching categories:", error)
+      return []
+    }
+
+    return data as Category[]
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    return []
+  }
+})
 
 export default async function CategoriesPage() {
-  const supabase = createServerClientSafe()
-  const { data: categories, error } = await supabase.from("categories").select("*").order("name")
-
-  if (error) {
-    console.error("Ошибка при загрузке категорий:", error)
-  }
+  const categories = await getCategoriesCached()
 
   return (
     <div className="container mx-auto px-4 py-8">
