@@ -2,15 +2,15 @@ import Link from "next/link"
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
-      <h1 className="text-6xl font-bold text-gray-800 mb-4">404</h1>
-      <h2 className="text-2xl font-semibold text-gray-700 mb-6">Страница не найдена</h2>
-      <p className="text-gray-600 mb-8 max-w-md">
-        Извините, страница, которую вы ищете, не существует или была перемещена.
+    <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+      <h1 className="mb-4 text-6xl font-bold text-gray-800">404</h1>
+      <h2 className="mb-6 text-2xl font-semibold text-gray-600">Страница не найдена</h2>
+      <p className="mb-8 max-w-md text-gray-500">
+        Извините, запрашиваемая вами страница не существует или была перемещена.
       </p>
       <Link
         href="/"
-        className="px-6 py-3 bg-gray-800 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
+        className="rounded-md bg-gray-800 px-6 py-3 text-white transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
       >
         Вернуться на главную
       </Link>

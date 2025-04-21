@@ -1,7 +1,16 @@
 import Link from "next/link"
 import { Facebook, Instagram, Twitter } from "lucide-react"
+import { createServerClientSafe } from "@/lib/supabase/server-safe"
 
-export function Footer() {
+async function getCategories() {
+  const supabase = createServerClientSafe()
+  const { data } = await supabase.from("categories").select("name, slug").order("name")
+  return data || []
+}
+
+export async function Footer() {
+  const categories = await getCategories()
+
   return (
     <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-4 py-12">
@@ -81,31 +90,21 @@ export function Footer() {
           <div>
             <h3 className="mb-4 text-lg font-semibold">Категории</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/categories/paints" className="text-gray-300 hover:text-white">
-                  Краски
-                </Link>
-              </li>
-              <li>
-                <Link href="/categories/brushes" className="text-gray-300 hover:text-white">
-                  Кисти
-                </Link>
-              </li>
-              <li>
-                <Link href="/categories/canvas" className="text-gray-300 hover:text-white">
-                  Холсты
-                </Link>
-              </li>
-              <li>
-                <Link href="/categories/paper" className="text-gray-300 hover:text-white">
-                  Бумага
-                </Link>
-              </li>
-              <li>
-                <Link href="/categories/accessories" className="text-gray-300 hover:text-white">
-                  Аксессуары
-                </Link>
-              </li>
+              {categories.length > 0 ? (
+                categories.slice(0, 5).map((category) => (
+                  <li key={category.slug}>
+                    <Link href={`/categories/${category.slug}`} className="text-gray-300 hover:text-white">
+                      {category.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li>
+                  <Link href="/categories" className="text-gray-300 hover:text-white">
+                    Все категории
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
