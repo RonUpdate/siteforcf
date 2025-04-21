@@ -1,85 +1,105 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { createServerClient } from "@/lib/supabase/server"
 import Link from "next/link"
-import { createClient } from "@/utils/supabase/client"
-import { Card, CardContent } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import Image from "next/image"
+import type { BlogPost, BlogCategory } from "@/lib/types"
 
-export default function BlogPage() {
-  const [blogPosts, setBlogPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+async function getBlogPosts() {
+  const supabase = createServerClient()
 
-  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("blog_posts")
+    .select("*")
+    .eq("published", true)
+    .order("published_at", { ascending: false })
 
-  useEffect(() => {
-    async function fetchBlogPosts() {
-      setLoading(true)
-      try {
-        // Получаем все блог-посты
-        const { data } = await supabase
-          .from("blog_posts")
-          .select("id, title, slug, content, created_at, image_url")
-          .order("created_at", { ascending: false })
-
-        setBlogPosts(data || [])
-      } catch (error) {
-        console.error("Error fetching blog posts:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchBlogPosts()
-  }, [supabase])
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    )
+  if (error) {
+    console.error("Error fetching blog posts:", error)
+    return []
   }
+
+  return data as BlogPost[]
+}
+
+async function getBlogCategories() {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase.from("blog_categories").select("*").order("name")
+
+  if (error) {
+    console.error("Error fetching blog categories:", error)
+    return []
+  }
+
+  return data as BlogCategory[]
+}
+
+export default async function BlogPage() {
+  const [posts, categories] = await Promise.all([getBlogPosts(), getBlogCategories()])
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Блог</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {blogPosts && blogPosts.length > 0 ? (
-          blogPosts.map((post) => (
-            <Link key={post.id} href={`/blog/${post.slug}`} className="block group">
-              <Card className="h-full overflow-hidden hover:shadow-md transition-shadow">
-                <div className="aspect-video overflow-hidden">
-                  {post.image_url ? (
-                    <img
-                      src={post.image_url || "/placeholder.svg"}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="bg-gradient-to-br from-blue-100 to-purple-100 h-full w-full flex items-center justify-center">
-                      <span className="text-gray-500 text-2xl font-bold">{post.title.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                </div>
-                <CardContent className="pt-4">
-                  <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
-                    {post.title}
-                  </h2>
-                  <p className="text-sm text-gray-500 mb-4">{new Date(post.created_at).toLocaleDateString()}</p>
-                  <p className="text-gray-600 line-clamp-3">
-                    {post.content.replace(/#{1,6}\s+/g, "").substring(0, 150)}...
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Статьи не найдены</p>
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Sidebar */}
+        <div className="md:w-1/4 lg:w-1/5">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-semibold mb-4">Категории</h2>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/blog" className="text-gray-800 font-medium hover:text-gray-600">
+                  Все статьи
+                </Link>
+              </li>
+              {categories.map((category) => (
+                <li key={category.id}>
+                  <Link href={`/blog/category/${category.slug}`} className="text-gray-600 hover:text-gray-800">
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
+        </div>
+
+        {/* Blog posts */}
+        <div className="md:w-3/4 lg:w-4/5">
+          {posts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map((post) => (
+                <Link key={post.id} href={`/blog/${post.slug}`} className="group">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow h-full flex flex-col">
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={
+                          post.featured_image ||
+                          `/placeholder.svg?height=300&width=400&query=${encodeURIComponent(post.title) || "/placeholder.svg"}`
+                        }
+                        alt={post.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4 flex-grow flex flex-col">
+                      <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">{post.excerpt}</p>
+                      <div className="flex justify-between items-center mt-auto">
+                        <span className="text-sm text-gray-500">
+                          {new Date(post.published_at || post.created_at).toLocaleDateString("ru-RU")}
+                        </span>
+                        <span className="text-sm font-medium text-gray-800">{post.author || "Админ"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <p className="text-gray-500">Статьи не найдены</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
