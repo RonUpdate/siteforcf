@@ -4,10 +4,10 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { supabaseClient } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
 
-export default function AdminLogin() {
+export default function AdminLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -20,56 +20,53 @@ export default function AdminLogin() {
     setError(null)
 
     try {
-      const { error } = await supabaseClient.auth.signInWithPassword({
+      const { error } = await supabaseClient().auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) throw error
 
-      // Check if user is an admin
-      const { data: adminUser } = await supabaseClient.from("admin_users").select("*").eq("email", email).single()
-
-      if (!adminUser) {
-        throw new Error("Unauthorized access")
-      }
-
       router.push("/admin")
       router.refresh()
     } catch (error: any) {
-      console.error("Login error:", error)
-      setError(error.message || "Ошибка входа. Проверьте данные и попробуйте снова.")
+      console.error("Ошибка входа:", error)
+      setError("Неверный email или пароль")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Вход в панель администратора</h2>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Креатив Фабрика</h1>
+          <h2 className="mt-2 text-xl font-semibold text-gray-900">Вход в админ-панель</h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+
+        <div className="rounded-lg bg-white px-8 py-10 shadow">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
             <div>
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
-                id="email-address"
+                id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm"
-                placeholder="Email"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
               />
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Пароль
               </label>
               <input
@@ -80,24 +77,27 @@ export default function AdminLogin() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm"
-                placeholder="Пароль"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
               />
             </div>
-          </div>
 
-          {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full justify-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                {loading ? "Вход..." : "Войти"}
+              </button>
+            </div>
+          </form>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Войти"}
-            </button>
+          <div className="mt-6 text-center text-sm">
+            <Link href="/" className="text-gray-600 hover:text-gray-900">
+              Вернуться на главную
+            </Link>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

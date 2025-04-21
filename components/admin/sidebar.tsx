@@ -75,7 +75,7 @@ export function AdminSidebar() {
 
       <div className="border-t border-gray-700 p-4">
         <Link
-          href="/"
+          href="/admin/logout"
           className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
         >
           <LogOut className="mr-3 h-5 w-5 flex-shrink-0" />
