@@ -1,30 +1,26 @@
 import type React from "react"
-import { Header } from "@/components/ui/header"
-import { Footer } from "@/components/ui/footer"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { CartProvider } from "@/context/cart-context"
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] })
 
-export const metadata = {
-  title: "Креатив Фабрика - Товары для творчества",
-  description: "Магазин товаров для творчества и рукоделия",
+export const metadata: Metadata = {
+  title: "Креатив Фабрика",
+  description: "Магазин креативных товаров для творчества",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
     <html lang="ru">
       <body className={inter.className}>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-        </div>
+        <CartProvider>{children}</CartProvider>
       </body>
     </html>
   )
