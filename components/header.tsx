@@ -61,7 +61,7 @@ export function Header() {
               <Search className="h-6 w-6" />
             </button>
             <Link
-              href="/admin/login"
+              href="/login"
               className="flex items-center rounded-md bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700"
             >
               <User className="mr-1 h-4 w-4" />
@@ -117,11 +117,9 @@ export function Header() {
               Блог
             </Link>
             <Link
-              href="/admin/login"
+              href="/login"
               className={`block rounded-md px-3 py-2 text-base font-medium ${
-                isActive("/admin/login")
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                isActive("/login") ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
               }`}
               onClick={() => setIsMenuOpen(false)}
             >

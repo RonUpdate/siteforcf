@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect("/admin/login")
+    redirect("/login")
   }
 
   // Проверяем, является ли пользователь администратором
