@@ -6,13 +6,18 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
+  // Получаем путь запроса
+  const path = req.nextUrl.pathname
+
+  // Логирование для отладки
+  console.log("Middleware запущен для пути:", path)
+
   // Получаем текущую сессию
   const {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Получаем путь запроса
-  const path = req.nextUrl.pathname
+  console.log("Middleware: сессия существует:", !!session)
 
   // Проверяем доступ к защищенным маршрутам
   if (path.startsWith("/admin")) {
@@ -25,14 +30,20 @@ export async function middleware(req: NextRequest) {
 
     // Если есть сессия, проверяем права администратора
     try {
+      console.log("Middleware: проверка прав администратора для:", session?.user?.email)
+
       const { data: adminUser, error } = await supabase
         .from("admin_users")
         .select("*")
         .eq("email", session.user.email)
         .single()
 
+      console.log("Middleware: результат проверки:", { adminUser, error })
+
       // Если пользователь не администратор, перенаправляем на страницу входа
       if (error || !adminUser) {
+        console.log("Middleware: пользователь не является администратором")
+
         // Выходим из системы
         await supabase.auth.signOut()
 
@@ -42,6 +53,8 @@ export async function middleware(req: NextRequest) {
         redirectUrl.searchParams.set("error", "not_admin")
         return NextResponse.redirect(redirectUrl)
       }
+
+      console.log("Middleware: пользователь имеет права администратора")
     } catch (error) {
       console.error("Ошибка при проверке прав администратора:", error)
 

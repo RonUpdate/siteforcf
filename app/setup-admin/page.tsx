@@ -38,16 +38,23 @@ export default function SetupAdminPage() {
     setMessage(null)
 
     try {
+      console.log("Начало создания администратора:", { email, name })
+
       // Регистрируем пользователя в Supabase Auth
       const { data: authData, error: authError } = await supabaseClient().auth.signUp({
         email,
         password,
       })
 
-      if (authError) throw authError
+      if (authError) {
+        console.error("Ошибка при регистрации пользователя:", authError)
+        throw authError
+      }
+
+      console.log("Пользователь успешно зарегистрирован:", authData)
 
       // Добавляем пользователя в таблицу admin_users
-      const { error: adminError } = await supabaseClient()
+      const { data: adminData, error: adminError } = await supabaseClient()
         .from("admin_users")
         .insert([
           {
@@ -56,8 +63,14 @@ export default function SetupAdminPage() {
             role: "superadmin",
           },
         ])
+        .select()
 
-      if (adminError) throw adminError
+      if (adminError) {
+        console.error("Ошибка при добавлении пользователя в admin_users:", adminError)
+        throw adminError
+      }
+
+      console.log("Администратор успешно создан:", adminData)
 
       setMessage(
         "Администратор успешно создан! Проверьте вашу электронную почту для подтверждения аккаунта, затем вы сможете войти в админ-панель.",
