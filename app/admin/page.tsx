@@ -1,9 +1,9 @@
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClientSafe } from "@/lib/supabase/server-safe"
 import Link from "next/link"
 import { Package, FolderOpen, FileText } from "lucide-react"
 
 async function getDashboardStats() {
-  const supabase = createServerClient()
+  const supabase = createServerClientSafe()
 
   const [{ count: productsCount }, { count: categoriesCount }, { count: blogPostsCount }] = await Promise.all([
     supabase.from("products").select("*", { count: "exact", head: true }),

@@ -1,14 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Указываем, что мы используем только App Router
-  experimental: {
-    appDir: true,
-  },
   eslint: {
+    // Игнорируем ошибки ESLint при сборке
     ignoreDuringBuilds: true,
   },
   typescript: {
+    // Игнорируем ошибки TypeScript при сборке
     ignoreBuildErrors: true,
   },
   images: {

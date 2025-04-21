@@ -1,10 +1,10 @@
 import Link from "next/link"
 import Image from "next/image"
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClientSafe } from "@/lib/supabase/server-safe"
 import type { Product, Category, BlogPost } from "@/lib/types"
 
 async function getFeaturedProducts() {
-  const supabase = createServerClient()
+  const supabase = createServerClientSafe()
 
   const { data, error } = await supabase
     .from("products")
@@ -26,7 +26,7 @@ async function getFeaturedProducts() {
 }
 
 async function getCategories() {
-  const supabase = createServerClient()
+  const supabase = createServerClientSafe()
 
   const { data, error } = await supabase.from("categories").select("*").limit(6)
 
@@ -39,7 +39,7 @@ async function getCategories() {
 }
 
 async function getLatestBlogPosts() {
-  const supabase = createServerClient()
+  const supabase = createServerClientSafe()
 
   const { data, error } = await supabase
     .from("blog_posts")
@@ -81,7 +81,13 @@ export default async function Home() {
             </div>
             <div className="md:w-1/2">
               <div className="relative h-64 md:h-96 w-full rounded-lg overflow-hidden">
-                <Image src="/vibrant-craft-explosion.png" alt="Креатив Фабрика" fill className="object-cover" priority />
+                <Image
+                  src="/vibrant-craft-explosion.png"
+                  alt="Креатив Фабрика"
+                  fill
+                  className="object-cover"
+                  priority
+                />
               </div>
             </div>
           </div>

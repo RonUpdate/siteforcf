@@ -1,6 +1,6 @@
 import type React from "react"
 import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
+import { createServerClientSafe } from "@/lib/supabase/server-safe"
 import Link from "next/link"
 import { LayoutDashboard, Package, FolderOpen, FileText, Settings, LogOut } from "lucide-react"
 
@@ -9,7 +9,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createServerClient()
+  const supabase = createServerClientSafe()
 
   // Check if user is authenticated
   const {
