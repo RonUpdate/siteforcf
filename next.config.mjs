@@ -2,16 +2,37 @@
 const nextConfig = {
   reactStrictMode: true,
   eslint: {
-    // Игнорируем ошибки ESLint при сборке
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Игнорируем ошибки TypeScript при сборке
     ignoreBuildErrors: true,
   },
   images: {
     domains: ['images.unsplash.com'],
     unoptimized: true,
+  },
+  // Добавляем настройку для обработки 404 ошибок
+  async rewrites() {
+    return [
+      // Если страница не найдена, перенаправляем на главную
+      {
+        source: '/:path*',
+        destination: '/',
+        has: [
+          {
+            type: 'header',
+            key: 'x-vercel-deployment-url',
+            value: '(?<url>.*)',
+          },
+        ],
+        missing: [
+          {
+            type: 'header',
+            key: 'x-middleware-rewrite',
+          },
+        ],
+      },
+    ]
   },
 }
 
