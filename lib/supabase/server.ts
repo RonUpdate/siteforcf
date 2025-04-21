@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
+import { createServerClientLegacy } from "./server-legacy"
 
 export function createServerClient() {
   const cookieStore = cookies()
@@ -12,3 +13,6 @@ export function createServerClient() {
     },
   })
 }
+
+// Реэкспортируем legacy версию для использования в pages/ директории
+export { createServerClientLegacy }
