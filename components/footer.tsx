@@ -3,12 +3,18 @@ import { Facebook, Instagram, Twitter } from "lucide-react"
 import { createServerClientSafe } from "@/lib/supabase/server-safe"
 
 async function getCategories() {
-  const supabase = createServerClientSafe()
-  const { data } = await supabase.from("categories").select("name, slug").order("name")
-  return data || []
+  try {
+    const supabase = createServerClientSafe()
+    const { data } = await supabase.from("categories").select("name, slug").order("name")
+    return data || []
+  } catch (error) {
+    console.error("Ошибка при загрузке категорий:", error)
+    return []
+  }
 }
 
 export async function Footer() {
+  // Получаем категории из базы данных
   const categories = await getCategories()
 
   return (
@@ -65,11 +71,6 @@ export async function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/categories" className="text-gray-300 hover:text-white">
-                  Категории
-                </Link>
-              </li>
-              <li>
                 <Link href="/blog" className="text-gray-300 hover:text-white">
                   Блог
                 </Link>
@@ -90,7 +91,7 @@ export async function Footer() {
           <div>
             <h3 className="mb-4 text-lg font-semibold">Категории</h3>
             <ul className="space-y-2">
-              {categories.length > 0 ? (
+              {categories && categories.length > 0 ? (
                 categories.slice(0, 5).map((category) => (
                   <li key={category.slug}>
                     <Link href={`/categories/${category.slug}`} className="text-gray-300 hover:text-white">

@@ -6,10 +6,11 @@ import { CartProvider } from "@/context/cart-context"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
+// Правильная настройка шрифта Inter
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   display: "swap",
-  preload: true,
+  variable: "--font-inter",
 })
 
 export const metadata: Metadata = {
@@ -24,17 +25,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ru">
-      <head>
-        <link
-          rel="preload"
-          href="/_next/static/media/6d93bde91c0c2823-s.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body className={inter.className}>
+    <html lang="ru" className={inter.variable}>
+      <body className="font-sans">
         <CartProvider>
           <div className="flex min-h-screen flex-col">
             <Header />
