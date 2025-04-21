@@ -1,6 +1,17 @@
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { createServerClientSafe } from "@/lib/supabase/server-safe"
 import Link from "next/link"
 import { Package, FolderOpen, FileText } from "lucide-react"
+
+// Проверка авторизации
+const supabase = createServerComponentClient({ cookies: () => cookies() })
+const {
+  data: { session },
+} = await supabase.auth.getSession()
+
+if (!session) redirect("/login")
 
 async function getDashboardStats() {
   const supabase = createServerClientSafe()

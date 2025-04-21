@@ -78,7 +78,7 @@ export default async function AdminBlogPage() {
                         <Image
                           src={
                             post.featured_image ||
-                            `/placeholder.svg?height=40&width=40&query=${encodeURIComponent(post.title)}`
+                            `/placeholder.svg?height=40&width=40&query=${encodeURIComponent(post.title) || "/placeholder.svg"}`
                           }
                           alt={post.title}
                           fill
