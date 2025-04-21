@@ -101,8 +101,8 @@ export async function Footer() {
                 ))
               ) : (
                 <li>
-                  <Link href="/categories" className="text-gray-300 hover:text-white">
-                    Все категории
+                  <Link href="/products" className="text-gray-300 hover:text-white">
+                    Все товары
                   </Link>
                 </li>
               )}
