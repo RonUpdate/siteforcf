@@ -3,8 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, Search } from "lucide-react"
-import { CartIcon } from "./cart/cart-icon"
+import { Menu, X, Search, User } from "lucide-react"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -43,36 +42,12 @@ export function Header() {
                 Товары
               </Link>
               <Link
-                href="/categories"
-                className={`text-sm font-medium ${
-                  isActive("/categories") ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                Категории
-              </Link>
-              <Link
                 href="/blog"
                 className={`text-sm font-medium ${
                   isActive("/blog") ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
                 }`}
               >
                 Блог
-              </Link>
-              <Link
-                href="/about"
-                className={`text-sm font-medium ${
-                  isActive("/about") ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                О нас
-              </Link>
-              <Link
-                href="/contact"
-                className={`text-sm font-medium ${
-                  isActive("/contact") ? "text-gray-900" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                Контакты
               </Link>
             </nav>
           </div>
@@ -85,7 +60,13 @@ export function Header() {
             >
               <Search className="h-6 w-6" />
             </button>
-            <CartIcon />
+            <Link
+              href="/admin/login"
+              className="flex items-center rounded-md bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700"
+            >
+              <User className="mr-1 h-4 w-4" />
+              Админ
+            </Link>
           </div>
 
           <div className="flex md:hidden">
@@ -127,17 +108,6 @@ export function Header() {
               Товары
             </Link>
             <Link
-              href="/categories"
-              className={`block rounded-md px-3 py-2 text-base font-medium ${
-                isActive("/categories")
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Категории
-            </Link>
-            <Link
               href="/blog"
               className={`block rounded-md px-3 py-2 text-base font-medium ${
                 isActive("/blog") ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
@@ -147,24 +117,15 @@ export function Header() {
               Блог
             </Link>
             <Link
-              href="/about"
+              href="/admin/login"
               className={`block rounded-md px-3 py-2 text-base font-medium ${
-                isActive("/about") ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              О нас
-            </Link>
-            <Link
-              href="/contact"
-              className={`block rounded-md px-3 py-2 text-base font-medium ${
-                isActive("/contact")
+                isActive("/admin/login")
                   ? "bg-gray-100 text-gray-900"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
               }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Контакты
+              Вход в админ-панель
             </Link>
           </div>
         </div>
