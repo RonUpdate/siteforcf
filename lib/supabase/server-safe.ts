@@ -3,63 +3,17 @@ import { cookies } from "next/headers"
 
 // Simple in-memory cache for requests
 const requestCache = new Map<string, { data: any; timestamp: number }>()
-const CACHE_TTL = 60 * 1000 // 1 minute cache
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache
 
 export function createServerClientSafe() {
   try {
     const cookieStore = cookies()
     return createServerComponentClient({
       cookies: () => cookieStore,
-      options: {
-        global: {
-          fetch: async (url, options) => {
-            // Create a cache key from the request
-            const cacheKey = `${url}:${options?.method || "GET"}:${options?.body || ""}`
-
-            // Check if we have a cached response
-            const cachedResponse = requestCache.get(cacheKey)
-            if (cachedResponse && Date.now() - cachedResponse.timestamp < CACHE_TTL) {
-              return new Response(JSON.stringify(cachedResponse.data), {
-                headers: { "Content-Type": "application/json" },
-              })
-            }
-
-            // Make the actual request
-            try {
-              const response = await fetch(url, options)
-
-              // Clone the response so we can read it twice
-              const clonedResponse = response.clone()
-
-              // Try to parse the response as JSON
-              try {
-                const data = await clonedResponse.json()
-
-                // Cache the successful response
-                if (response.ok) {
-                  requestCache.set(cacheKey, { data, timestamp: Date.now() })
-                }
-
-                // Return the original response
-                return response
-              } catch (error) {
-                // If JSON parsing fails, return the original response
-                return response
-              }
-            } catch (error) {
-              console.error("Fetch error:", error)
-              // Return a generic error response
-              return new Response(JSON.stringify({ error: "Failed to fetch data" }), {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-              })
-            }
-          },
-        },
-      },
     })
   } catch (error) {
-    // If cookies() vызывает ошибку, используем сервисную роль
+    console.error("Error creating server client:", error)
+    // Fallback to service role if cookies() fails
     return createServerComponentClient({
       cookies: () => {
         return {
@@ -71,5 +25,48 @@ export function createServerClientSafe() {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL as string,
       supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
     })
+  }
+}
+
+// Function to safely fetch data with caching
+export async function fetchWithCache<T>(
+  fetchFn: () => Promise<{ data: T | null; error: any }>,
+  cacheKey: string,
+  defaultValue: T,
+): Promise<T> {
+  // Check cache first
+  const cachedItem = requestCache.get(cacheKey)
+  if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_TTL) {
+    return cachedItem.data
+  }
+
+  try {
+    const { data, error } = await fetchFn()
+
+    if (error) {
+      console.error(`Error fetching data for ${cacheKey}:`, error)
+
+      // If we have cached data, use it even if expired
+      if (cachedItem) {
+        return cachedItem.data
+      }
+
+      return defaultValue
+    }
+
+    // Cache the successful response
+    const result = data || defaultValue
+    requestCache.set(cacheKey, { data: result, timestamp: Date.now() })
+
+    return result
+  } catch (error) {
+    console.error(`Fetch error for ${cacheKey}:`, error)
+
+    // If we have cached data, use it even if expired
+    if (cachedItem) {
+      return cachedItem.data
+    }
+
+    return defaultValue
   }
 }

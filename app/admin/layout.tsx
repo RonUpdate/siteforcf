@@ -5,7 +5,6 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { AdminSidebar } from "@/components/admin/sidebar"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  console.log("AdminLayout: начало проверки аутентификации")
   const cookieStore = cookies()
   const supabase = createServerComponentClient({ cookies: () => cookieStore })
 
@@ -15,11 +14,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession()
-
-    console.log("AdminLayout: результат проверки сессии:", {
-      sessionExists: !!session,
-      sessionError: sessionError?.message,
-    })
 
     if (sessionError) {
       console.error("Ошибка при получении сессии:", sessionError)
@@ -36,11 +30,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .select("*")
       .eq("email", session.user.email)
       .single()
-
-    console.log("AdminLayout: результат проверки прав администратора:", {
-      adminUser,
-      adminError: adminError?.message,
-    })
 
     if (adminError) {
       console.error("Ошибка при проверке прав администратора:", adminError)

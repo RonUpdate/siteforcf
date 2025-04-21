@@ -1,85 +1,88 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Suspense } from "react"
-import { createServerClientSafe } from "@/lib/supabase/server-safe"
+import { createServerClientSafe, fetchWithCache } from "@/lib/supabase/server-safe"
 import { Loading } from "@/components/ui/loading"
 import type { Product, Category, BlogPost } from "@/lib/types"
 import { cache } from "react"
 
 // Cache the featured products fetching
 const getFeaturedProductsCached = cache(async () => {
-  try {
-    const supabase = createServerClientSafe()
+  const supabase = createServerClientSafe()
 
-    const { data, error } = await supabase
-      .from("products")
-      .select(`
+  return fetchWithCache(
+    () =>
+      supabase
+        .from("products")
+        .select(`
         *,
         category:categories(*),
         images:product_images(*)
       `)
-      .eq("featured", true)
-      .order("created_at", { ascending: false })
-      .limit(4)
-
-    if (error) {
-      console.error("Error fetching featured products:", error)
-      return []
-    }
-
-    return data as (Product & { category: Category; images: any[] })[]
-  } catch (error) {
-    console.error("Error fetching featured products:", error)
-    return []
-  }
+        .eq("featured", true)
+        .order("created_at", { ascending: false })
+        .limit(4),
+    "featured-products",
+    [] as (Product & { category: Category; images: any[] })[],
+  )
 })
 
 // Cache the categories fetching
 const getCategoriesCached = cache(async () => {
-  try {
-    const supabase = createServerClientSafe()
+  const supabase = createServerClientSafe()
 
-    const { data, error } = await supabase.from("categories").select("*").limit(6)
-
-    if (error) {
-      console.error("Error fetching categories:", error)
-      return []
-    }
-
-    return data as Category[]
-  } catch (error) {
-    console.error("Error fetching categories:", error)
-    return []
-  }
+  return fetchWithCache(() => supabase.from("categories").select("*").limit(6), "categories", [] as Category[])
 })
 
 // Cache the latest blog posts fetching
 const getLatestBlogPostsCached = cache(async () => {
-  try {
-    const supabase = createServerClientSafe()
+  const supabase = createServerClientSafe()
 
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("*")
-      .eq("published", true)
-      .order("published_at", { ascending: false })
-      .limit(3)
-
-    if (error) {
-      console.error("Error fetching blog posts:", error)
-      return []
-    }
-
-    return data as BlogPost[]
-  } catch (error) {
-    console.error("Error fetching blog posts:", error)
-    return []
-  }
+  return fetchWithCache(
+    () =>
+      supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("published", true)
+        .order("published_at", { ascending: false })
+        .limit(3),
+    "latest-blog-posts",
+    [] as BlogPost[],
+  )
 })
 
-// Featured Products component
+// Featured Products component with error handling
 async function FeaturedProducts() {
-  const featuredProducts = await getFeaturedProductsCached()
+  let featuredProducts: (Product & { category: Category; images: any[] })[] = []
+
+  try {
+    featuredProducts = await getFeaturedProductsCached()
+  } catch (error) {
+    console.error("Error in FeaturedProducts component:", error)
+    // Continue with empty array
+  }
+
+  // If no products, show a simplified version
+  if (featuredProducts.length === 0) {
+    return (
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8 text-center">Популярные товары</h2>
+          <div className="text-center p-8 bg-white rounded-lg shadow-md">
+            <p className="text-gray-500">Популярные товары временно недоступны</p>
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              href="/products"
+              className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              Все товары
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-12">
@@ -133,9 +136,30 @@ async function FeaturedProducts() {
   )
 }
 
-// Categories component
+// Categories component with error handling
 async function CategoriesSection() {
-  const categories = await getCategoriesCached()
+  let categories: Category[] = []
+
+  try {
+    categories = await getCategoriesCached()
+  } catch (error) {
+    console.error("Error in CategoriesSection component:", error)
+    // Continue with empty array
+  }
+
+  // If no categories, show a simplified version
+  if (categories.length === 0) {
+    return (
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8 text-center">Категории</h2>
+          <div className="text-center p-8 bg-white rounded-lg shadow-md">
+            <p className="text-gray-500">Категории временно недоступны</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-12 bg-gray-50">
@@ -168,9 +192,38 @@ async function CategoriesSection() {
   )
 }
 
-// Latest Blog Posts component
+// Latest Blog Posts component with error handling
 async function LatestBlogPosts() {
-  const latestPosts = await getLatestBlogPostsCached()
+  let latestPosts: BlogPost[] = []
+
+  try {
+    latestPosts = await getLatestBlogPostsCached()
+  } catch (error) {
+    console.error("Error in LatestBlogPosts component:", error)
+    // Continue with empty array
+  }
+
+  // If no posts, show a simplified version
+  if (latestPosts.length === 0) {
+    return (
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8 text-center">Блог</h2>
+          <div className="text-center p-8 bg-white rounded-lg shadow-md">
+            <p className="text-gray-500">Статьи блога временно недоступны</p>
+          </div>
+          <div className="text-center mt-8">
+            <Link
+              href="/blog"
+              className="inline-block border border-gray-800 text-gray-800 px-6 py-3 rounded-md font-medium hover:bg-gray-800 hover:text-white transition-colors"
+            >
+              Все статьи
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-12">
@@ -218,6 +271,7 @@ async function LatestBlogPosts() {
   )
 }
 
+// Main Home component with error boundaries
 export default function Home() {
   return (
     <div>

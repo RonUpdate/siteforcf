@@ -88,39 +88,26 @@ export default function LoginPage() {
 
         if (error) throw error
 
-        // Для отладки
-        console.log("Авторизация успешна:", data)
-        console.log("Перенаправление на:", redirect)
-
         // Если требуется доступ к админ-панели, проверяем права
         if (redirect.includes("/admin")) {
-          try {
-            const { data: adminData, error: adminError } = await supabase
-              .from("admin_users")
-              .select("*")
-              .eq("email", email)
-              .single()
+          const { data: adminData, error: adminError } = await supabase
+            .from("admin_users")
+            .select("*")
+            .eq("email", email)
+            .single()
 
-            console.log("Проверка прав администратора:", { adminData, adminError })
-
-            if (adminError || !adminData) {
-              // Если пользователь не администратор, выходим из системы и показываем ошибку
-              await supabase.auth.signOut()
-              throw new Error("У вас нет прав доступа к админ-панели")
-            }
-
-            // Если пользователь администратор, перенаправляем в админ-панель
-            console.log("Перенаправление в админ-панель:", redirect)
-
-            // Принудительное перенаправление на страницу админ-панели
-            window.location.href = redirect
-            return
-          } catch (error) {
-            console.error("Ошибка при проверке прав администратора:", error)
-            setError(error.message || "Произошла ошибка при проверке прав доступа.")
-            setLoading(false)
-            return
+          if (adminError || !adminData) {
+            // Если пользователь не администратор, выходим из системы и показываем ошибку
+            await supabase.auth.signOut()
+            throw new Error("У вас нет прав доступа к админ-панели")
           }
+
+          // Если пользователь администратор, перенаправляем в админ-панель
+          console.log("Перенаправление в админ-панель:", redirect)
+
+          // Принудительное перенаправление на страницу админ-панели
+          window.location.href = redirect
+          return
         }
 
         // Для обычных пользователей
