@@ -3,14 +3,14 @@ import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { ProductTable } from "@/components/product-table"
+import { ColoringPagesTable } from "@/components/coloring-pages-table"
 
-export default async function ProductsPage() {
+export default async function ColoringPagesPage() {
   const supabase = createServerComponentClient({ cookies })
 
-  // Get products with category information
-  const { data: products } = await supabase
-    .from("products")
+  // Get coloring pages with category information
+  const { data: coloringPages } = await supabase
+    .from("coloring_pages")
     .select(`
       *,
       categories:category_id (
@@ -22,16 +22,16 @@ export default async function ProductsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Products</h1>
-        <Link href="/admin/products/new">
+        <h1 className="text-3xl font-bold">Coloring Pages</h1>
+        <Link href="/admin/coloring-pages/new">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            Add Product
+            Add Coloring Page
           </Button>
         </Link>
       </div>
 
-      <ProductTable products={products || []} />
+      <ColoringPagesTable coloringPages={coloringPages || []} />
     </div>
   )
 }

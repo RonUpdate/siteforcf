@@ -1,46 +1,54 @@
-import Image from "next/image"
 import Link from "next/link"
-import { AddToCartButton } from "./cart/add-to-cart-button"
-import type { Product } from "@/lib/types"
+import Image from "next/image"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-interface ProductCardProps {
-  product: Product
+type ProductProps = {
+  id: string
+  name: string
+  price: number
+  image_url: string
+  slug: string
+  stock_quantity: number
+  is_featured: boolean
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const { name, slug, price, discount_price, images } = product
-  const primaryImage = images?.find((img) => img.is_primary)?.image_url
+export function ProductCard({ product }: { product: ProductProps }) {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(price)
+  }
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md">
-      <Link href={`/products/${slug}`} className="block aspect-square overflow-hidden">
-        <Image
-          src={primaryImage || "/placeholder.svg?height=300&width=300&query=product"}
-          alt={name}
-          width={300}
-          height={300}
-          className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-        />
-      </Link>
-
-      <div className="p-4">
-        <Link href={`/products/${slug}`} className="block">
-          <h3 className="mb-2 text-sm font-medium text-gray-900 line-clamp-2">{name}</h3>
-        </Link>
-
-        <div className="mb-4 flex items-center">
-          {discount_price ? (
-            <>
-              <span className="text-lg font-bold text-gray-900">{discount_price.toLocaleString()} ₽</span>
-              <span className="ml-2 text-sm text-gray-500 line-through">{price.toLocaleString()} ₽</span>
-            </>
-          ) : (
-            <span className="text-lg font-bold text-gray-900">{price.toLocaleString()} ₽</span>
-          )}
+    <Link href={`/product/${product.slug}`}>
+      <Card className="overflow-hidden transition-all hover:shadow-lg">
+        <div className="relative h-48 w-full">
+          <Image
+            src={product.image_url || "/placeholder.svg?height=192&width=384&query=product"}
+            alt={product.name}
+            fill
+            className="object-cover"
+          />
+          {product.is_featured && <Badge className="absolute top-2 right-2">Featured</Badge>}
         </div>
-
-        <AddToCartButton product={product} className="w-full" />
-      </div>
-    </div>
+        <CardContent className="p-4">
+          <h3 className="font-semibold">{product.name}</h3>
+          <p className="text-lg font-bold mt-2">{formatPrice(product.price)}</p>
+        </CardContent>
+        <CardFooter className="p-4 pt-0 flex justify-between">
+          {product.stock_quantity > 0 ? (
+            <Badge variant="outline" className="bg-green-50">
+              In Stock
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-red-50">
+              Out of Stock
+            </Badge>
+          )}
+        </CardFooter>
+      </Card>
+    </Link>
   )
 }
